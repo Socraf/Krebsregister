@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link href="style.css" rel="stylesheet" type="text/css">
+            <link href="bootstrap.min.css" rel="stylesheet" type="text/css">
+                <meta charset="utf-8">
+                    <meta content="width=device-width, initial-scale=1" name="viewport">
+                        <title>
+                            Krebsregister
+                        </title>
+                    </meta>
+                </meta>
+            </link>
+        </link>
+        <script src="jquery.js">
+        </script>
+        <script src="bootstrap.min.js">
+        </script>
+        <script>
+            $(document).ready(function(){
+		    $("tr").click(function(){
+		     alert($("#name", this).text());
+		     $("#myModal").modal("hide");
+    });
+    });
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <h2>
+                Modal Scroll Example
+            </h2>
+            <p>
+                Use the .modal-dialog-scrollable class to enable scrolling inside the modal.
+            </p>
+            <!-- Button to Open the Modal -->
+            <button class="btn btn-primary" data-target="#myModal" data-toggle="modal" type="button">
+                Open modal
+            </button>
+            <!-- The Modal -->
+            <div class="modal" id="myModal">
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <!-- Modal Header -->
+                        <div class="modal-header">
+                            <h1 class="modal-title">
+                                Modal Heading
+                            </h1>
+                            <button class="close" data-dismiss="modal" type="button">
+                                ×
+                            </button>
+                        </div>
+                        <!-- Modal body -->
+                        <div class="modal-body">
+                            <div class="container-fluid">
+                                <table class="table table-striped">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>
+                                                Firstname
+                                            </th>
+                                            <th>
+                                                Lastname
+                                            </th>
+                                            <th>
+                                                Email
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td id="name" value="John 1">
+                                                John 1
+                                            </td>
+                                            <td id="nachname">
+                                                Doe
+                                            </td>
+                                            <td id="email">
+                                                john@example.com
+                                            </td>
+                                            <p>
+                                                John 1
+                                            </p>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Modal footer -->
+                        <div class="modal-footer">
+                            <button class="btn btn-danger" data-dismiss="modal" type="button">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

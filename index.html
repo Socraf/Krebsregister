@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="style.css" rel="stylesheet" type="text/css">
+            <link href="bootstrap.min.css" rel="stylesheet" type="text/css">
+                <meta charset="utf-8">
+                    <meta content="width=device-width, initial-scale=1" name="viewport">
+                        <title>
+                            Krebsregister
+                        </title>
+                    </meta>
+                </meta>
+            </link>
+        </link>
+        <script src="jquery.js">
+        </script>
+        <script src="index.js">
+        </script>
+        <script src="bootstrap.min.js">
+        </script>
+    </head>
+    <body>
+        <div class="container-fluid fluid_col">
+            <header>
+                <h1>
+                    Krebsregister
+                </h1>
+                <h5>
+                    Einrichtung:
+                    <small>
+                        Hannover
+                    </small>
+                </h5>
+            </header>
+        </div>
+        <div class="container" id="container_head">
+            <div class="row txt">
+                <div class="col-xs-12 col-sm-6 col-md-4">
+                    <div class="form-group">
+                        <label>
+                            Name
+                        </label>
+                        <input class="form-control" id="name" readonly="" style="background: transparent" type="text" value="Max Musterman Musterman">
+                        </input>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            Patientennummer
+                        </label>
+                        <input class="form-control" id="patnr" readonly="" style="background: transparent" type="text" value="123456">
+                        </input>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-6 col-md-4">
+                    <div class="form-group">
+                        <label>
+                            Geschlecht
+                        </label>
+                        <input class="form-control" id="gesch" readonly="" style="background: transparent" type="text" value="männlich">
+                        </input>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            Geburtsdatum
+                        </label>
+                        <input class="form-control" id="gebdat" readonly="" style="background: transparent" type="text" value="01.01.1970">
+                        </input>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-6 col-md-4">
+                    <form action="SAPEVENT:ONICD_CODE">
+                        <div class="form-group" style="padding-top: 1.9em">
+                            <div class="input-group ">
+                                <div class="input-group-prepend">
+                                    <button class="btn btn-outline-primary btn-sm btn-head" data-target="#icd_container" data-toggle="modal" id="icd_button" type="submit">
+                                        ICD-Code auswählen
+                                    </button>
+                                </div>
+                                <input class="form-control" id="icd_input" type="text" value="">
+                                </input>
+                            </div>
+                        </div>
+                    </form>
+                    <form action="SAPEVENT:ONNEW_ICD">
+                        <div class="form-group" style="padding-top: 1.9em">
+                            <button class="btn btn-outline-primary btn-block btn-head" type="submit">
+                                Neu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <!-- The Modal -->
+        <div class="modal" id="icd_container">
+            <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header header_background">
+                        <h1 class="modal-title">
+                            ICD-Code auswählen
+                        </h1>
+                        <button class="close" data-dismiss="modal" type="button">
+                            ×
+                        </button>
+                    </div>
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <div class="container-fluid">
+                            <table class="table">
+                                <thead class="">
+                                    <tr>
+                                        <th scope="col">
+                                            ICD
+                                        </th>
+                                        <th scope="col">
+                                            Freitext einer Diagnose
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr id="tr_body">
+                                        <td id="icd_name">
+                                            John 1
+                                        </td>
+                                        <td id="nachname">
+                                            Doe
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td id="icd_name">
+                                            Mary 2
+                                        </td>
+                                        <td>
+                                            Moe
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td id="name">
+                                            July 3
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td id="name">
+                                            July 4
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td id="name">
+                                            July 5
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            July
+                                        </td>
+                                        <td>
+                                            Dooley
+                                        </td>
+                                    </tr>
+                                    <tr id="tr_body">
+                                        <td>
+                                            Antonio
+                                        </td>
+                                        <td>
+                                            Flores
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-info btn-head " data-dismiss="modal" type="button">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
