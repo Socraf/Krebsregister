@@ -69,21 +69,24 @@
                 </div>
                 <div class="col-xs-12 col-sm-6 col-md-4">
                     <form action="SAPEVENT:ONICD_CODE">
-                        <div class="form-group" style="padding-top: 1.9em">
+                        <div class="form-group">
+                            <label id="icd_label">
+                                ICD-Code Bezeichner
+                            </label>
                             <div class="input-group ">
-                                <div class="input-group-prepend">
-                                    <button class="btn btn-outline-primary btn-sm btn-head" data-target="#icd_container" data-toggle="modal" id="icd_button" type="submit">
+                                <input class="form-control" id="icd_input" type="text" value="">
+                                </input>
+                                <div class="input-group-prepend" style="padding-left: 1em">
+                                    <button class="btn btn-outline-primary btn-sm btn-head" data-target="#icd_container" data-toggle="modal" id="search_icd" type="submit">
                                         ICD-Code auswählen
                                     </button>
                                 </div>
-                                <input class="form-control" id="icd_input" type="text" value="">
-                                </input>
                             </div>
                         </div>
                     </form>
                     <form action="SAPEVENT:ONNEW_ICD">
                         <div class="form-group" style="padding-top: 1.9em">
-                            <button class="btn btn-outline-primary btn-block btn-head" type="submit">
+                            <button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">
                                 Neu
                             </button>
                         </div>
@@ -124,7 +127,7 @@
                                         <td id="icd_name">
                                             John 1
                                         </td>
-                                        <td id="nachname">
+                                        <td id="icd_description">
                                             Doe
                                         </td>
                                     </tr>
@@ -132,144 +135,15 @@
                                         <td id="icd_name">
                                             Mary 2
                                         </td>
-                                        <td>
-                                            Moe
+                                        <td id="icd_description">
                                         </td>
                                     </tr>
                                     <tr id="tr_body">
-                                        <td id="name">
+                                        <td id="icd_name">
                                             July 3
                                         </td>
-                                        <td>
+                                        <td id="icd_description">
                                             Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td id="name">
-                                            July 4
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td id="name">
-                                            July 5
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            July
-                                        </td>
-                                        <td>
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td>
-                                            Antonio
-                                        </td>
-                                        <td>
-                                            Flores
                                         </td>
                                     </tr>
                                 </tbody>
