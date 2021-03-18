@@ -36,3 +36,12 @@ h1, h5 {
     color: #E7ECF0;
     font-size: 1.1em;
 }
+/*---- 18.03.2021 */
+
+.title_color {
+    color: #f3a683;
+}
+.footer_background {
+    background-color: #3F5161;
+    color: #FAFAFA;
+}
