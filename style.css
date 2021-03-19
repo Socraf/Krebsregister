@@ -7,7 +7,6 @@
     border: 1px solid #243949;
 }
 .btn-head:hover {
-    /*background-image: linear-gradient(to right, #243949 0%, #517fa4 100%);*/
     background-image: linear-gradient(to right, #3F5161 0%, #6a859c 100%);
     color: white;
     border: 0;
