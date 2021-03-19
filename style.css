@@ -7,7 +7,8 @@
     border: 1px solid #243949;
 }
 .btn-head:hover {
-    background-image: linear-gradient(to right, #243949 0%, #517fa4 100%);
+    /*background-image: linear-gradient(to right, #243949 0%, #517fa4 100%);*/
+    background-image: linear-gradient(to right, #3F5161 0%, #6a859c 100%);
     color: white;
     border: 0;
 }
@@ -44,4 +45,12 @@ h1, h5 {
 .footer_background {
     background-color: #3F5161;
     color: #FAFAFA;
+}
+/*19.03.2021*/
+
+.item_color {
+    color: #46779c;
+}
+.item_color:hover {
+    background-color: #E5E5E5;
 }

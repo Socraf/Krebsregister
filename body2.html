@@ -87,7 +87,7 @@
                     <form action="SAPEVENT:ONNEW_ICD">
                         <div class="form-group" style="padding-top: 1.9em">
                             <button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">
-                                Neu
+                                Neue primäre Diagnose
                             </button>
                         </div>
                     </form>
@@ -111,43 +111,45 @@
                     <!-- Modal body -->
                     <div class="modal-body">
                         <div class="container-fluid">
-                            <table class="table">
-                                <thead class="">
-                                    <tr>
-                                        <th scope="col">
-                                            ICD
-                                        </th>
-                                        <th scope="col">
-                                            Freitext einer Diagnose
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr id="tr_body">
-                                        <td id="icd_name">
-                                            John 1
-                                        </td>
-                                        <td id="icd_description">
-                                            Doe
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td id="icd_name">
-                                            Mary 2
-                                        </td>
-                                        <td id="icd_description">
-                                        </td>
-                                    </tr>
-                                    <tr id="tr_body">
-                                        <td id="icd_name">
-                                            July 3
-                                        </td>
-                                        <td id="icd_description">
-                                            Dooley
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <input class="form-control" id="myInput" placeholder="Search.." type="text">
+                                <table class="table" id="icd_table">
+                                    <thead class="">
+                                        <tr>
+                                            <th scope="col">
+                                                ICD
+                                            </th>
+                                            <th scope="col">
+                                                Freitext einer Diagnose
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr id="tr_body">
+                                            <td id="icd_name">
+                                                John 1
+                                            </td>
+                                            <td id="icd_description">
+                                                Doe
+                                            </td>
+                                        </tr>
+                                        <tr id="tr_body">
+                                            <td id="icd_name">
+                                                Mary 2
+                                            </td>
+                                            <td id="icd_description">
+                                            </td>
+                                        </tr>
+                                        <tr id="tr_body">
+                                            <td id="icd_name">
+                                                July 3
+                                            </td>
+                                            <td id="icd_description">
+                                                Dooley
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </input>
                         </div>
                     </div>
                     <!-- Modal footer -->
@@ -160,93 +162,158 @@
             </div>
         </div>
         <!-- Body Table -------------------------------------------------------------------------------------->
-        <div class="container" style="padding-top: 1.5em;">
-            <div class="row">
-                <div class="col-xs-12 col-sm-12 col-md-12">
-                    <h4 class="text-muted">
-                        <!--  Meldungen: -->
-                    </h4>
-                </div>
-            </div>
-            <div class="card text-center">
-                <div class="card-header txt ">
-                    Diagnose:
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-xs-12 col-sm-4 col-md-4">
-                            <h5 class="card-title">
-                                Primär ICD
+        <div class="container-fuid ml-5 mr-5" style="padding-top: 1.5em;">
+            <div class="card text-center ">
+                <div class="card-header" data-toggle="collapse" href="#collapseOne" style="background-color: #647987;
+                        color: #FAFAFA;">
+                    <div class="row ">
+                        <div class="col">
+                            <h5>
+                                Diagnose vom
+                                <small class="title_color">
+                                    01.01.2021
+                                </small>
                             </h5>
-                            <p class="card-text">
-                                ICD.142
-                            </p>
                         </div>
-                        <div class="col-xs-12 col-sm-4 col-md-4">
-                            <h5 class="card-title">
+                        <div class="col">
+                            <h5>
+                                Primär ICD:
+                                <small class="title_color">
+                                    ICD.142
+                                </small>
+                            </h5>
+                        </div>
+                        <div class="col">
+                            <h5>
                                 Lokalisation
+                                <small class="title_color">
+                                    R
+                                </small>
                             </h5>
-                            <p class="card-text">
-                                R
-                            </p>
                         </div>
-                        <div class="col-xs-12 col-sm-4 col-md-4">
-                            <h5 class="card-title">
+                        <div class="col">
+                            <h5>
                                 Datum Erstdiagnose
+                                <small class="title_color">
+                                    18.03.2021
+                                </small>
                             </h5>
-                            <p class="card-text">
-                                18.03.2021
-                            </p>
                         </div>
                     </div>
-                    <div class="row" style="padding-top: 1em;">
-                        <div class="col">
-                            <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
-                                Operation
-                            </a>
-                        </div>
-                        <div class="col">
-                            <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
-                                Strahlentherapie
-                            </a>
-                        </div>
-                        <div class="col">
-                            <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
-                                Systemische Therapie
-                            </a>
-                        </div>
-                        <div class="col">
-                            <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
-                                Verlauf
-                            </a>
-                        </div>
-                        <div class="col">
-                            <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
-                                Tumorkonferenz
-                            </a>
+                </div>
+                <div class="collapse show" data-parent="" id="collapseOne">
+                    <div class="card-body">
+                        <div class="row" style="padding-top: 1em;">
+                            <div class="col">
+                                <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
+                                    Operation +
+                                </a>
+                                <ul class="list-group list-group-flush text-left">
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 24.04.20220
+                                        </small>
+                                    </a>
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 25.05.20220
+                                        </small>
+                                    </a>
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 26.06.20220
+                                        </small>
+                                    </a>
+                                </ul>
+                            </div>
+                            <div class="col">
+                                <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
+                                    Strahlentherapie +
+                                </a>
+                                <ul class="list-group list-group-flush text-left">
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 24.04.20220
+                                        </small>
+                                    </a>
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 25.05.20220
+                                        </small>
+                                    </a>
+                                </ul>
+                            </div>
+                            <div class="col">
+                                <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
+                                    Systemische Therapie +
+                                </a>
+                                <ul class="list-group list-group-flush text-left">
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 24.04.20220
+                                        </small>
+                                    </a>
+                                </ul>
+                            </div>
+                            <div class="col">
+                                <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
+                                    Verlauf +
+                                </a>
+                                <ul class="list-group list-group-flush text-left">
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 24.04.20220
+                                        </small>
+                                    </a>
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 25.05.20220
+                                        </small>
+                                    </a>
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 26.06.20220
+                                        </small>
+                                    </a>
+                                </ul>
+                            </div>
+                            <div class="col">
+                                <a class="btn btn-outline-primary btn-block btn-head" data-placement="top" data-toggle="tooltip" title="neu">
+                                    Tumorkonferenz +
+                                </a>
+                                <ul class="list-group list-group-flush text-left">
+                                    <a class="list-group-item item_color" href="#">
+                                        <small>
+                                            Meldung vom 24.04.20220
+                                        </small>
+                                    </a>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- footer -->
-        <footer class="">
-            <nav class="navbar fixed-bottom footer_background">
-                <div class="text-left">
-                    <h5>
-                        <small>
-                            www.kap-berlin.de
-                        </small>
-                    </h5>
-                </div>
-                <div class="text-right">
-                    <h5>
-                        <small>
-                            info@kap-berlin.de
-                        </small>
-                    </h5>
-                </div>
-            </nav>
-        </footer>
     </body>
 </html>
+<!-- footer -->
+<footer>
+    <br>
+        <nav class="navbar fixed-bottom footer_background">
+            <div class="text-left">
+                <h5>
+                    <small>
+                        www.kap-berlin.de
+                    </small>
+                </h5>
+            </div>
+            <div class="text-right">
+                <h5>
+                    <small>
+                        info@kap-berlin.de
+                    </small>
+                </h5>
+            </div>
+        </nav>
+    </br>
+</footer>

@@ -27,4 +27,11 @@
         $("#new_icd").click(function() {
             check_input_icd();
         });
+        /* Tooltip 19.03.2021 */
+        $("#myInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#icd_table td").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
     });
