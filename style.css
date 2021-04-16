@@ -7,7 +7,6 @@
     border: 1px solid #243949;
 }
 .btn-head:hover {
-    /*background-image: linear-gradient(to right, #243949 0%, #517fa4 100%);*/
     background-image: linear-gradient(to right, #3F5161 0%, #6a859c 100%);
     color: white;
     border: 0;
@@ -18,6 +17,7 @@
     background: -webkit-linear-gradient(to left, #f3a683, #243949);
     background: linear-gradient(to left, #f3a683, #243949);
 }
+/*
 input[type="text"] {
     background: transparent;
     border: 0;
@@ -25,6 +25,11 @@ input[type="text"] {
     color: #f3a683;
     cursor: pointer;
     font-size: 1.1em;
+}
+*/
+
+#input_text {
+    color: #f3a683;
 }
 h1, h5 {
     color: #E7ECF0;
@@ -54,6 +59,9 @@ h1, h5 {
 .item_color:hover {
     background-color: #E5E5E5;
 }
-
-
-
+.but {
+    text-align: left;
+}
+a {
+    color: #46779c;
+}
