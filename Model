@@ -1,0 +1,1154 @@
+class /KAP/KR_CL_MODEL definition
+  public
+  inheriting from /KAP/CL_COMPONENT
+  create public .
+
+public section.
+
+  methods SET_KREBSREGISTER_KEY
+    importing
+      !IS_KREBSREGISTER type /KAP/KR_ST_KREBSREGISTER .
+  methods GET_S_KREBSREGISTER_KEY
+    returning
+      value(RS_KREBSREGISTER) type /KAP/KR_ST_KREBSREGISTER .
+  methods GET_T_SEARCH_HELP_ICDLIST
+    returning
+      value(RT_ICDLIST) type /KAP/KR_TT_ICDLIST
+    raising
+      CX_DYNAMIC_CHECK .
+  methods GET_T_ICDLIST
+    returning
+      value(RT_ICDLIST) type /KAP/KR_TT_ICDLIST .
+  class-methods GET_T_ORGANISATIONS
+    returning
+      value(RT_EINRI) type ISH_T_TN01 .
+  class-methods GET_ORGANISATION
+    returning
+      value(R_EINRI) type EINRI .
+  class-methods GET_T_GENDER
+    returning
+      value(RT_TN17T) type ISHMED_TN17T .
+  methods CHECK_ICD_INPUT
+    importing
+      !IT_QUERY type CNHT_QUERY_TABLE
+      !IR_VIEW type ref to /KAP/KR_CL_VIEW
+    returning
+      value(R_RC) type SY-SUBRC .
+  methods CHECK_PATIENT_NUMBER
+    importing
+      !IT_QUERY type CNHT_QUERY_TABLE
+      !IR_VIEW type ref to /KAP/KR_CL_VIEW
+    returning
+      value(R_RC) type SY-SUBRC .
+  methods GET_T_PATIENT_LIST
+    importing
+      !IT_QUERY type CNHT_QUERY_TABLE
+      !IR_VIEW type ref to /KAP/KR_CL_VIEW
+    returning
+      value(R_RC) type SY-SUBRC .
+  class-methods GET_MESSAGE
+    importing
+      !I_MSGNO type SY-MSGNO
+      !I_MSGV1 type SY-MSGV1 optional
+      !I_MSGV2 type SY-MSGV2 optional
+      !I_MSGV3 type SY-MSGV3 optional
+      !I_MSGV4 type SY-MSGV4 optional
+    returning
+      value(R_MSG) type STRING .
+protected section.
+private section.
+
+  data GT_SQSLIST type /KAP/KR_TT_SQSLIST .
+  data GT_ICDLIST type /KAP/KR_TT_ICDLIST .
+  data GS_KREBSREGISTER type /KAP/KR_ST_KREBSREGISTER .
+  constants GC_MSGID type SY-MSGID value '/KAP/KR_NK_KREBSREG' ##NO_TEXT.
+
+  methods GET_DIAGNOSIS
+    importing
+      !IS_NPAT type NPAT
+      !IR_VIEW type ref to /KAP/KR_CL_VIEW
+    returning
+      value(R_RC) type SY-SUBRC .
+  methods PREPARE_CANCER_REGISTRY_DATA
+    importing
+      !IS_NPAT type NPAT
+      !IS_NDIA type NDIA optional
+    returning
+      value(RS_KREBSREGISTER) type /KAP/KR_ST_KREBSREGISTER .
+  methods CHECK_INTER_INSTITUTIONAL
+    returning
+      value(R_RC) type XFELD .
+ENDCLASS.
+
+
+
+CLASS /KAP/KR_CL_MODEL IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->CHECK_ICD_INPUT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_QUERY                       TYPE        CNHT_QUERY_TABLE
+* | [--->] IR_VIEW                        TYPE REF TO /KAP/KR_CL_VIEW
+* | [<-()] R_RC                           TYPE        SY-SUBRC
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD check_icd_input.
+
+    DATA: ls_query TYPE w3query,
+          l_found  TYPE xfeld.
+
+    LOOP AT it_query INTO ls_query.
+
+      "Button Suchen
+      IF ls_query-name EQ 'NEW_ICD'.
+
+        l_found = 'X'.
+
+      ENDIF.
+
+      CLEAR ls_query.
+
+    ENDLOOP.
+
+    "Wenn Suchen nicht ausgewählt wurde, dann nicht weiter machen!
+    IF l_found NE 'X'.
+
+      r_rc = 1.
+
+      RETURN.
+
+    ENDIF.
+
+    "Patientennummer ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'icd_input'.
+
+    IF sy-subrc NE 0 OR ls_query-value IS INITIAL.
+
+      ir_view->set_popup_mode( 7 ).
+
+      r_rc = 1.
+
+    ENDIF.
+
+    ir_view->set_cancer_registry( 'X' ).
+
+    ir_view->update( ).
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_MODEL->CHECK_INTER_INSTITUTIONAL
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_RC                           TYPE        XFELD
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD check_inter_institutional.
+
+    DATA ls_tn00 TYPE tn00.
+
+    CALL FUNCTION 'ISH_TN00_READ'
+      EXPORTING
+        ss_mandt  = sy-mandt
+      IMPORTING
+        ss_tn00   = ls_tn00
+      EXCEPTIONS
+        not_found = 1
+        OTHERS    = 2.
+    IF sy-subrc EQ 0.
+
+      IF ls_tn00-manid EQ 'X'.
+
+        r_rc = 'X'.
+
+      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->CHECK_PATIENT_NUMBER
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_QUERY                       TYPE        CNHT_QUERY_TABLE
+* | [--->] IR_VIEW                        TYPE REF TO /KAP/KR_CL_VIEW
+* | [<-()] R_RC                           TYPE        SY-SUBRC
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD check_patient_number.
+
+    DATA: ls_query              TYPE w3query,
+          l_found               TYPE xfeld,
+          ls_patlist            TYPE bapi1084srch,
+          ls_krebsregister_data TYPE /kap/kr_st_krebsregister,
+          ls_npat               TYPE npat,
+          l_patnr               TYPE patnr,
+          l_einri               TYPE einri.
+
+    LOOP AT it_query INTO ls_query.
+
+      "Button Suchen
+      IF ls_query-name EQ 'BTN_OPEN_KR'.
+
+        l_found = 'X'.
+
+      ENDIF.
+
+      CLEAR ls_query.
+
+    ENDLOOP.
+
+    "Wenn Suchen nicht ausgewählt wurde, dann nicht weiter machen!
+    IF l_found NE 'X'.
+
+      RETURN.
+
+    ENDIF.
+
+    "Patientennummer ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_nr_in'.
+
+    CASE sy-subrc.
+
+      WHEN 0.
+
+        IF ls_query-value IS NOT INITIAL.
+
+          CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+            EXPORTING
+              input  = ls_query-value
+            IMPORTING
+              output = l_patnr.
+
+          "Patientennummer Überprüfen
+          CALL FUNCTION 'ISH_READ_NPAT'
+            EXPORTING
+              ss_einri              = '*'
+              ss_patnr              = l_patnr
+            IMPORTING
+              ss_npat               = ls_npat
+            EXCEPTIONS
+              not_found             = 1
+              no_authority          = 2
+              no_einri              = 3
+              no_treatment_contract = 4
+              OTHERS                = 5.
+          IF sy-subrc EQ  0.
+
+            "Patient ist richtig aber Einrichtung nicht, dann Fehlermeldung ausgeben:
+            "Patient hat noch keinen Stammsatz in Einrichtung X
+
+            CLEAR ls_query.
+
+            "MandWeite Identifikation (Einrichtungsübergreifend) überprüfen
+            IF check_inter_institutional( ) NE 'X'.
+
+              "Einrichtung ermitteln
+              READ TABLE it_query INTO ls_query WITH KEY name = 'einri_in'.
+
+              IF sy-subrc EQ 0.
+
+                l_einri = ls_query-value(4).
+
+                IF l_einri NE ls_npat-einri.
+
+                  ir_view->set_popup_mode( 4 ).
+
+                  ir_view->set_start_hml_values( it_query ).
+
+                  ir_view->update( ).
+
+                  RETURN.
+
+                ENDIF.
+
+              ENDIF.
+
+            ENDIF.
+
+            "Wenn alles richtig ist, dann Patientendiagnose ermitteln: (Model)
+            "Patientendaten für das Krebsregister laden (View)
+            IF me->get_diagnosis(
+              EXPORTING
+                is_npat =   ls_npat  " IS-H: Stammdaten Patient (allgemein)
+                ir_view =   ir_view  " Krebsregister - View
+             ) NE 0.
+
+              "Patientendaten vorbelegen (View)
+              ir_view->set_start_hml_values( it_query ).
+
+              "Wenn rc > 0, dann Fehlermeldung ausgeben:
+              ir_view->set_popup_mode( 6 ).
+
+              ir_view->update( ).
+
+              RETURN.
+
+            ENDIF.
+
+            "Patientendaten vorbelegen (View)
+            ir_view->set_start_hml_values( it_query ).
+
+            ir_view->update( ).
+
+          ELSE.
+
+            "Patientennummer ist vorhanden, aber nicht richtig!
+            "Fehlermeldung ausgeben
+
+            ir_view->set_popup_mode( 3 ).
+
+            ir_view->set_start_hml_values( it_query ).
+
+            ir_view->update( ).
+
+            RETURN.
+
+          ENDIF.
+
+        ELSE.
+
+          "Patientennummer ist nicht vorhanden. Fehlermeldung ausgeben!
+          ir_view->set_popup_mode( 3 ).
+
+          ir_view->set_start_hml_values( it_query ).
+
+          ir_view->update( ).
+
+          RETURN.
+
+        ENDIF.
+
+      WHEN OTHERS.
+
+    ENDCASE.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_MODEL->GET_DIAGNOSIS
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IS_NPAT                        TYPE        NPAT
+* | [--->] IR_VIEW                        TYPE REF TO /KAP/KR_CL_VIEW
+* | [<-()] R_RC                           TYPE        SY-SUBRC
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_diagnosis.
+
+    DATA: lt_nfal    TYPE TABLE OF nfal,
+          ls_nfal    TYPE nfal,
+          l_einri    TYPE einri,
+          ls_ndia    TYPE ndia,
+          lt_ndia    TYPE TABLE OF ndia,
+          lt_ndia_c  TYPE TABLE OF ndia,
+          lt_sqslist TYPE TABLE OF /kap/kr_sqslist,
+          lt_icdlist TYPE /kap/kr_tt_icdlist,
+          ls_icdlist TYPE /kap/kr_st_icdlist,
+          l_dtext1   TYPE nkdi-dtext1,
+          l_dtext2   TYPE nkdi-dtext2,
+          l_dtext3   TYPE nkdi-dtext3.
+
+    IF is_npat IS INITIAL.
+
+      r_rc = 1.
+
+      RETURN.
+
+    ENDIF.
+
+    IF is_npat-einri IS INITIAL.
+
+      GET PARAMETER ID 'EIN' FIELD l_einri.
+
+    ELSE.
+
+      l_einri = is_npat-einri.
+
+    ENDIF.
+
+    "IS-H: Suche alle Fälle zum angegebenen Selektionskriterium
+    CALL FUNCTION 'ISH_CASE_LIST'
+      EXPORTING
+        i_einri = l_einri
+        i_patnr = is_npat-patnr
+      TABLES
+        t_nfal  = lt_nfal.
+
+    IF sy-subrc NE 0.
+
+      r_rc = 1.
+
+      RETURN.
+
+    ENDIF.
+
+    LOOP AT lt_nfal INTO ls_nfal.
+
+      "IS-H: API zur Erzeugung einer Liste der gestellten Diagnosen eines Falles
+      CALL FUNCTION 'ISH_CASEDIAGNOSIS_GETLIST'
+        EXPORTING
+          ss_einri = ls_nfal-einri
+          ss_falnr = ls_nfal-falnr
+        TABLES
+          ss_ndia  = lt_ndia.
+
+      IF sy-subrc NE 0 OR lt_ndia IS INITIAL.
+
+        CONTINUE.
+
+      ENDIF.
+
+      APPEND LINES OF lt_ndia TO lt_ndia_c.
+
+      CLEAR ls_nfal.
+
+    ENDLOOP.
+
+    "Diagnose nach Datum und Zeit sortieren
+    SORT lt_ndia_c BY diadt DESCENDING diazt DESCENDING.
+
+    CLEAR lt_ndia.
+
+    "Tabelle mit Listeinträgen für Prüfungen
+    SELECT * FROM /kap/kr_sqslist INTO TABLE lt_sqslist.
+
+    IF sy-subrc NE 0.
+
+      r_rc = 1.
+
+      RETURN.
+
+    ENDIF.
+
+    "Nur nach relevanten Diagnosen für das krebsregister suchen
+    LOOP AT lt_ndia_c INTO ls_ndia.
+
+      READ TABLE lt_sqslist WITH KEY wert = ls_ndia-dkey1 TRANSPORTING NO FIELDS.
+
+      IF sy-subrc EQ 0.
+
+        APPEND ls_ndia TO lt_ndia.
+
+      ENDIF.
+
+    ENDLOOP.
+
+    CLEAR ls_ndia.
+
+    IF lt_ndia IS INITIAL.
+
+      "Es wurde keine relevante Diagnose für das krebsregister gefunden => Vergleich mit der Tabelle /kap/kr_sqslist
+      r_rc = 1.
+
+      RETURN.
+
+    ENDIF.
+
+    "Diagnose nach katalog und Schlüssel sortieren
+    SORT lt_ndia BY dkey1 DESCENDING dkat1 DESCENDING.
+
+    "Redundanz in der Tabelle der Diagnose überprüfen mit Diagnosekatalog und Diagnoseschlüssel
+    DELETE ADJACENT DUPLICATES FROM lt_ndia COMPARING dkey1.
+
+    "Diagnoseliste laden (View)
+    LOOP AT lt_ndia INTO ls_ndia.
+
+      ls_icdlist-dkey1 = ls_ndia-dkey1.
+
+      "IS-H: Lesen aller Diagnosetexte anhand Schlüssel und puffern
+      CALL FUNCTION 'ISH_FIND_DIAGNOSE_TEXT'
+        EXPORTING
+          dkat          = ls_ndia-dkat1
+          dkey          = ls_ndia-dkey1
+        IMPORTING
+          dtext1        = l_dtext1
+          dtext2        = l_dtext2
+          dtext3        = l_dtext3
+        EXCEPTIONS
+          no_text_found = 1
+          OTHERS        = 2.
+      IF sy-subrc EQ 0.
+
+        ls_icdlist-ditxt = l_dtext1 && l_dtext2 && l_dtext3.
+
+      ENDIF.
+
+      APPEND ls_icdlist TO lt_icdlist.
+
+    ENDLOOP.
+
+    "Update ICD List (View)
+    ir_view->update_icdlist( lt_icdlist ).
+
+    CLEAR lt_icdlist.
+
+    "Wenn nur 1 Diagnose gefunden wurde, dann diese vorbelegen:
+    IF lines( lt_ndia ) EQ 1.
+
+      READ TABLE lt_ndia INTO ls_ndia INDEX 1.
+
+      IF sy-subrc EQ 0.
+
+        "Daten des Krebsregisters auf den Bildschirm laden
+        ir_view->set_cancer_registry(
+          EXPORTING
+            i_show_cancer_registry = 'X'
+            is_krebsregister       =  me->prepare_cancer_registry_data(
+                                          EXPORTING
+                                            is_npat          = is_npat " IS-H: Stammdaten Patient (allgemein)
+                                            is_ndia          = ls_ndia " Schlüsselfelder für den Report /KAP/KR_PR_KREBSREGISTER
+            )
+         ).
+
+      ENDIF.
+
+    ELSE.
+
+      "Daten des Krebsregisters auf den Bildschirm laden
+      ir_view->set_cancer_registry(
+          EXPORTING
+            i_show_cancer_registry = 'X'
+            is_krebsregister       =  me->prepare_cancer_registry_data(
+                                          EXPORTING
+                                            is_npat          = is_npat " IS-H: Stammdaten Patient (allgemein)
+            )
+         ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method /KAP/KR_CL_MODEL=>GET_MESSAGE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_MSGNO                        TYPE        SY-MSGNO
+* | [--->] I_MSGV1                        TYPE        SY-MSGV1(optional)
+* | [--->] I_MSGV2                        TYPE        SY-MSGV2(optional)
+* | [--->] I_MSGV3                        TYPE        SY-MSGV3(optional)
+* | [--->] I_MSGV4                        TYPE        SY-MSGV4(optional)
+* | [<-()] R_MSG                          TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_message.
+
+*  Funktionsbaustein FORMAT_MESSAGE hat als Importparameter
+*    die Nachrichtenklasse,
+*    die Nachrichtennummer,
+*    die Nachrichtensprache
+*    und die 4 Variablenfelder, und gibt daraus den Nachrichtentext zurück.
+
+    CALL FUNCTION 'FORMAT_MESSAGE'
+      EXPORTING
+        id        = gc_msgid
+        lang      = '-'
+        no        = i_msgno
+        v1        = i_msgv1
+        v2        = i_msgv2
+        v3        = i_msgv3
+        v4        = i_msgv4
+      IMPORTING
+        msg       = r_msg
+      EXCEPTIONS
+        not_found = 1
+        OTHERS    = 2.
+    IF sy-subrc <> 0.
+
+      "Fehler: Text konnte nicht gefunden werden
+      r_msg = TEXT-e01.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method /KAP/KR_CL_MODEL=>GET_ORGANISATION
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_EINRI                        TYPE        EINRI
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_organisation.
+
+    CALL FUNCTION 'ISHMED_ME_GET_EINRI'
+      IMPORTING
+        e_einri = r_einri.
+
+    "GET PARAMETER ID 'EIN' FIELD r_einri.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->GET_S_KREBSREGISTER_KEY
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RS_KREBSREGISTER               TYPE        /KAP/KR_ST_KREBSREGISTER
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_S_KREBSREGISTER_KEY.
+
+    rs_krebsregister = gs_krebsregister.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method /KAP/KR_CL_MODEL=>GET_T_GENDER
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_TN17T                       TYPE        ISHMED_TN17T
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_t_gender.
+
+    SELECT * FROM tn17t
+      INTO TABLE rt_tn17t
+      WHERE spras EQ sy-langu.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->GET_T_ICDLIST
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_ICDLIST                     TYPE        /KAP/KR_TT_ICDLIST
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_T_ICDLIST.
+
+    DATA: ls_sqslist TYPE /kap/kr_st_sqslist,
+          ls_icdlist TYPE /kap/kr_st_icdlist,
+          l_dkat     TYPE  nkdi-dkat,
+          l_dkey     TYPE  nkdi-dkey,
+          l_dtext1   TYPE  nkdi-dtext1,
+          l_dtext2   TYPE  nkdi-dtext2,
+          l_dtext3   TYPE  nkdi-dtext3.
+
+    IF gs_krebsregister-dkat1 IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    SELECT * FROM /kap/kr_sqslist INTO
+      TABLE gt_sqslist.
+
+    IF sy-subrc EQ 0.
+
+      l_dkat = gs_krebsregister-dkat1.
+
+      LOOP AT gt_sqslist INTO ls_sqslist.
+
+        ls_icdlist-dkey1 = ls_sqslist-wert.
+        l_dkey = ls_sqslist-wert.
+
+        CALL FUNCTION 'ISH_FIND_DIAGNOSE_TEXT'
+          EXPORTING
+            dkat          = l_dkat
+            dkey          = l_dkey
+*           SPRAS         = SY-LANGU
+          IMPORTING
+            dtext1        = l_dtext1
+            dtext2        = l_dtext2
+            dtext3        = l_dtext3
+          EXCEPTIONS
+            no_text_found = 1
+            OTHERS        = 2.
+        IF sy-subrc EQ 0.
+
+          ls_icdlist-ditxt = l_dtext1.
+
+        ENDIF.
+
+        APPEND ls_icdlist TO gt_icdlist.
+        CLEAR ls_icdlist.
+
+      ENDLOOP.
+
+    ENDIF.
+
+    rt_icdlist = gt_icdlist.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method /KAP/KR_CL_MODEL=>GET_T_ORGANISATIONS
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_EINRI                       TYPE        ISH_T_TN01
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_t_organisations.
+
+    CALL FUNCTION 'ISH_TN01_GET_ALL'
+      IMPORTING
+        et_tn01 = rt_einri.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->GET_T_PATIENT_LIST
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_QUERY                       TYPE        CNHT_QUERY_TABLE
+* | [--->] IR_VIEW                        TYPE REF TO /KAP/KR_CL_VIEW
+* | [<-()] R_RC                           TYPE        SY-SUBRC
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_t_patient_list.
+
+    DATA: ls_query     TYPE w3query,
+          l_found      TYPE xfeld,
+          ls_patlist   TYPE bapi1084srch,
+          lt_patlist   TYPE /kap/kr_tt_patlist,
+          lt_return    TYPE bapiret2_t,
+          ls_return    TYPE bapiret2,
+          l_fallnummer TYPE falnr,
+          l_msg        TYPE string.
+
+    LOOP AT it_query INTO ls_query.
+
+      "Button Suchen
+      IF ls_query-name EQ 'BTN_SEARCH_PAT'.
+
+        l_found = 'X'.
+
+      ENDIF.
+
+      CLEAR ls_query.
+
+    ENDLOOP.
+
+    "Wenn Suchen nicht ausgewählt wurde, dann nicht weiter machen!
+    IF l_found NE 'X'.
+
+      RETURN.
+
+    ENDIF.
+
+    "Fallnumer ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'fall_nr_in'.
+
+    IF sy-subrc EQ 0.
+
+      "Wenn eine Fallnumer vorhanden ist:
+      l_fallnummer = ls_query-value.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Einrichtung ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'einri_in'.
+
+    IF sy-subrc EQ 0.
+
+      IF ls_query-value IS INITIAL.
+
+        ls_patlist-institution = '*'.
+
+      ELSE.
+
+        ls_patlist-institution = ls_query-value(4).
+
+      ENDIF.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Patientennummer ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_nr_in'.
+
+    IF sy-subrc EQ 0.
+
+      ls_patlist-patientid = ls_query-value.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Nachname ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_nname_in'.
+
+    IF sy-subrc EQ 0.
+
+      ls_patlist-last_name_pat = ls_query-value.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Vorname ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_vname_in'.
+
+    IF sy-subrc EQ 0.
+
+      ls_patlist-frst_name_pat = ls_query-value.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Geburtsname ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_gname_in'.
+
+    IF sy-subrc EQ 0.
+
+      ls_patlist-birth_name = ls_query-value.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Geschlecht ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_gesch_in'.
+
+    IF sy-subrc EQ 0.
+
+      CASE ls_query-value(1).
+
+        WHEN '1'.
+
+          ls_patlist-sex = 'M'.
+
+        WHEN '2'.
+
+          ls_patlist-sex = 'W'.
+
+        WHEN '3'.
+
+          ls_patlist-sex = 'U'.
+
+      ENDCASE.
+
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Geburtsdatum ermitteln
+    READ TABLE it_query INTO ls_query WITH KEY name = 'pat_gebdat_in'.
+
+    IF sy-subrc EQ 0 AND ls_query-value IS NOT INITIAL.
+
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          date_external            = ls_query-value
+        IMPORTING
+          date_internal            = ls_patlist-dob
+        EXCEPTIONS
+          date_external_is_invalid = 1
+          OTHERS                   = 2.
+
+      IF sy-subrc NE 0.
+
+        "Fehler - geburtsdatum
+        "Popup Zeigen
+        ir_view->set_start_hml_values( it_query ).
+
+        ir_view->set_popup_mode( 1 ).
+
+        ir_view->update( ).
+
+        r_rc = sy-subrc.
+
+        RETURN.
+
+      ENDIF.
+
+      CLEAR ls_query.
+
+    ENDIF.
+
+    "Wenn Alle Daten fehlerfrei übernommen wurden, dann die Funktionsbausteine 'BAPI_PATIENT_SEARCH' anwenden.
+
+    TRY.
+
+        CALL FUNCTION 'BAPI_PATIENT_SEARCH'
+          EXPORTING
+            institution          = ls_patlist-institution
+            filter_patientid     = ls_patlist-patientid
+            filter_patcaseid     = l_fallnummer
+            filter_last_name_pat = ls_patlist-last_name_pat
+            filter_frst_name_pat = ls_patlist-frst_name_pat
+            filter_birth_name    = ls_patlist-birth_name
+            filter_dob_from      = ls_patlist-dob
+            filter_sex_ext       = ls_patlist-sex
+          TABLES
+            patients             = lt_patlist
+            return               = lt_return.
+
+        IF lt_patlist IS INITIAL AND lt_return IS NOT INITIAL.
+
+          ir_view->set_start_hml_values( it_query ).
+
+          ir_view->set_popup_mode( 2 ).
+
+          READ TABLE lt_return INTO ls_return INDEX 1.
+
+          IF sy-subrc EQ 0.
+
+            "Fehlermeldung weitergeben
+            l_msg = ls_return-message.
+
+            ir_view->set_msg_error_patient( i_error = l_msg ).
+
+          ENDIF.
+
+          ir_view->update( ).
+
+          r_rc = 1.
+
+          RETURN.
+
+        ENDIF.
+
+        IF lt_patlist IS NOT INITIAL.
+
+          ir_view->set_start_hml_values( it_query ).
+
+          ir_view->set_popup_mode( 5 ).
+
+          ir_view->set_patlist( lt_patlist  ).
+
+          ir_view->update( ).
+
+        ENDIF.
+
+      CATCH  cx_sy_dyn_call_illegal_type INTO DATA(lr_exception).
+
+        MESSAGE lr_exception->get_text( ) TYPE 'I'.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->GET_T_SEARCH_HELP_ICDLIST
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_ICDLIST                     TYPE        /KAP/KR_TT_ICDLIST
+* | [!CX!] CX_DYNAMIC_CHECK
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_T_SEARCH_HELP_ICDLIST.
+
+    DATA: lt_return      TYPE TABLE OF bapiret2,
+          lt_patcaselist TYPE TABLE OF bapi2097excase,
+          ls_patcaselist TYPE  bapi2097excase,
+          lt_ndia        TYPE TABLE OF ndia,
+          lt_ndia2       TYPE TABLE OF rndi1,
+          ls_ndia2       TYPE  rndi1,
+          l_falnr        TYPE falnr,
+          l_einri        TYPE einri,
+          l_rc           TYPE sy-subrc.
+
+    IF gs_krebsregister IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    "Alle Fälle zu einem Patient ermitteln
+    "Zu der angegebenen Fallnummer wird der Patient ermittelt und alle Fälle, die zu diesem Patienten gehören,
+    "i n einer Liste ausgegeben.  Diese Liste PATCASELIST beinhaltet die Daten, die eine weitere Selektion ermöglichen.
+    CALL FUNCTION 'BAPI_PATCASE_GETPATCASELIST'
+      EXPORTING
+        client      = sy-mandt
+        institution = gs_krebsregister-einri
+        patcaseid   = gs_krebsregister-falnr
+      TABLES
+        return      = lt_return
+        patcaselist = lt_patcaselist.
+
+    IF lt_patcaselist IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    SORT lt_patcaselist BY creation_date DESCENDING.
+
+    LOOP AT lt_patcaselist INTO ls_patcaselist.
+
+
+
+      l_falnr = ls_patcaselist-patcaseid.
+      l_einri = gs_krebsregister-einri.
+
+      " Diagnosen zum Fall ermitteln
+      CALL FUNCTION 'ISH_READ_NDIA'
+        EXPORTING
+          einri   = l_einri
+          falnr   = l_falnr
+          afdia   = 'X'
+          bhdia   = 'X'
+          endia   = 'X'
+          ewdia   = 'X'
+          fhdia   = 'X'
+          khdia   = 'X'
+          opdia   = 'X'
+        IMPORTING
+          rc      = l_rc
+        TABLES
+          ss_ndia = lt_ndia2.
+
+      IF lt_ndia2 IS NOT INITIAL.
+
+        "BREAK-POINT.
+
+      ENDIF.
+
+    ENDLOOP.
+
+    " BREAK-POINT.
+
+    IF gs_krebsregister-dkat1 IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_MODEL->PREPARE_CANCER_REGISTRY_DATA
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IS_NPAT                        TYPE        NPAT
+* | [--->] IS_NDIA                        TYPE        NDIA(optional)
+* | [<-()] RS_KREBSREGISTER               TYPE        /KAP/KR_ST_KREBSREGISTER
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD prepare_cancer_registry_data.
+
+    DATA: l_name   TYPE string,
+          l_einri  TYPE einri,
+          ls_tn01  TYPE tn01,
+          l_dtext1 TYPE nkdi-dtext1.
+
+    IF is_npat IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    IF is_npat-einri IS INITIAL.
+
+      GET PARAMETER ID 'EIN' FIELD l_einri.
+
+    ELSE.
+
+      l_einri = is_npat-einri.
+
+    ENDIF.
+
+    "Einrichtung
+    rs_krebsregister-einri = l_einri.
+
+    "Einrichtung-Bezeichner
+    CALL FUNCTION 'ISH_EINRI_CHECK'
+      EXPORTING
+        ss_einri  = l_einri
+      IMPORTING
+        ss_tn01   = ls_tn01
+      EXCEPTIONS
+        not_found = 1
+        OTHERS    = 2.
+    IF sy-subrc EQ 0.
+
+      rs_krebsregister-einbz = ls_tn01-einbz.
+
+    ENDIF.
+
+    "Name
+    CALL FUNCTION 'ISH_PATNAME_GET'
+      EXPORTING
+        i_einri          = is_npat-einri
+        i_patnr          = is_npat-patnr
+      IMPORTING
+        e_pnamec         = l_name
+      EXCEPTIONS
+        patnr_not_found  = 1
+        no_authority     = 2
+        no_einri         = 3
+        gender_not_found = 4
+        age_not_found    = 5
+        OTHERS           = 6.
+    IF sy-subrc EQ 0.
+
+      rs_krebsregister-name = l_name.
+
+    ENDIF.
+
+    "Patientennummer
+    rs_krebsregister-patnr = is_npat-patnr.
+
+    "Geschlecht
+    rs_krebsregister-gschl = is_npat-gschl.
+
+    "Geburtsdatum
+    rs_krebsregister-gbdat = is_npat-gbdat.
+
+    IF is_ndia IS NOT INITIAL.
+
+      rs_krebsregister-dkey1  = is_ndia-dkey1.
+      rs_krebsregister-dkat1  = is_ndia-dkat1.
+
+      "IS-H: Lesen aller Diagnosetexte anhand Schlüssel und puffern
+      CALL FUNCTION 'ISH_FIND_DIAGNOSE_TEXT'
+        EXPORTING
+          dkat          = is_ndia-dkat1
+          dkey          = is_ndia-dkey1
+        IMPORTING
+          dtext1        = l_dtext1
+        EXCEPTIONS
+          no_text_found = 1
+          OTHERS        = 2.
+      IF sy-subrc EQ 0.
+
+        rs_krebsregister-dtext1 = l_dtext1.
+
+      ENDIF.
+
+      rs_krebsregister-dialo  = is_ndia-dialo.
+      rs_krebsregister-diadt  = is_ndia-diadt.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_MODEL->SET_KREBSREGISTER_KEY
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IS_KREBSREGISTER               TYPE        /KAP/KR_ST_KREBSREGISTER
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_krebsregister_key.
+
+    DATA: l_dkat   TYPE  nkdi-dkat,
+          l_dkey   TYPE  nkdi-dkey,
+          l_dtext1 TYPE  nkdi-dtext1.
+
+    IF is_krebsregister IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    gs_krebsregister = is_krebsregister.
+
+    l_dkat = is_krebsregister-dkat1.
+    l_dkey = is_krebsregister-dkey1.
+
+    "IS-H: Lesen aller Diagnosetexte anhand Schlüssel und puffern
+    CALL FUNCTION 'ISH_FIND_DIAGNOSE_TEXT'
+      EXPORTING
+        dkat          = l_dkat
+        dkey          = l_dkey
+      IMPORTING
+        dtext1        = l_dtext1
+      EXCEPTIONS
+        no_text_found = 1
+        OTHERS        = 2.
+    IF sy-subrc EQ 0.
+
+      gs_krebsregister-dtext1 = l_dtext1.
+
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.
