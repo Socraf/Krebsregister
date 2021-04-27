@@ -1,0 +1,2112 @@
+class /KAP/KR_CL_VIEW definition
+  public
+  inheriting from /KAP/CL_HTML_COMPVIEW
+  create public .
+
+public section.
+
+  events ON_EVENT
+    exporting
+      value(ACTION) type C
+      value(FRAME) type C
+      value(GETDATA) type C
+      value(POSTDATA) type CNHT_POST_DATA_TAB
+      value(QUERY_TABLE) type CNHT_QUERY_TABLE .
+
+  methods SET_PATLIST
+    importing
+      !IT_PATLIST type /KAP/KR_TT_PATLIST .
+  methods UPDATE_ICDLIST
+    importing
+      !IT_ICDLIST type /KAP/KR_TT_ICDLIST .
+  methods SET_START_HML_VALUES
+    importing
+      !IT_QUERY type CNHT_QUERY_TABLE .
+  methods SET_MSG_ERROR_PATIENT
+    importing
+      !I_ERROR type STRING .
+  methods SET_PREALLOCATE_ORGANISATION
+    importing
+      !I_PREALLOCATE_ORGANISATION type XFELD .
+  methods SET_POPUP_MODE
+    importing
+      !I_POPUP_MODE type I .
+  methods SET_CANCER_REGISTRY
+    importing
+      !I_SHOW_CANCER_REGISTRY type XFELD
+      !IS_KREBSREGISTER type /KAP/KR_ST_KREBSREGISTER optional .
+  methods SET_KREBSREGISTER_DATA
+    importing
+      !IS_NPAT type NPAT .
+  methods CLEAR_KREBSREGISTER_DATA .
+
+  methods HANDLE_EVENT
+    redefinition .
+protected section.
+
+  data:
+    gt_sqslist TYPE /KAP/KR_TT_SQSLIST.
+
+  methods BUILD_BODY
+    redefinition .
+  methods PRESET_CSS
+    redefinition .
+  methods PRESET_JS
+    redefinition .
+  methods REGISTER_EVENTS
+    redefinition .
+private section.
+
+  data GS_KREBSREGISTER type /KAP/KR_ST_KREBSREGISTER .
+  data GT_ICDLIST type /KAP/KR_TT_ICDLIST .
+  data GT_TITELS_COLUMNS_ICD type ISH_T_STRINGS .
+  data GS_START_HTML type /KAP/KR_ST_START_HTML .
+  data G_ERROR_PATIENT_MSG type STRING .
+  data GT_PATLIST type /KAP/KR_TT_PATLIST .
+  data G_PREALLOCATE_ORGANISATION type XFELD .
+  data G_POPUP_MODE type I .
+  data G_SHOW_CANCER_REGISTRY type XFELD .
+
+  methods GET_HTML_BODY_POPUP_INFO
+    importing
+      !I_TARGET type STRING
+      !I_TITLE type STRING
+      !I_TEXT type STRING
+      !I_BUTTON_TEXT type STRING
+      !I_BUTTON_TYPE type I optional
+      !I_BUTTON_OUTLINE type XFELD optional
+    returning
+      value(R_HTML_POPUP_INFO) type STRING .
+  methods GET_HTML_BODY_POPUP_LIST_ICD
+    importing
+      !I_TARGET type STRING
+      !I_TITLE type STRING
+      !I_TEXT type STRING optional
+      !I_BUTTON_TEXT type STRING
+      !I_BUTTON_TYPE type I optional
+      !I_BUTTON_OUTLINE type XFELD optional
+    returning
+      value(R_HTML_POPUP_INFO) type STRING .
+  methods GET_HTML_BODY_HEADER
+    importing
+      !I_MODE type CHAR1
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_CANCER_REGISTRY
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_START
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_START_DOB
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_START_GENDER
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_START_ORGANISATIONS
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_BODY_PATIENT_DATA
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_BODY_FOOTER
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_INPUT_HIDDEN
+    importing
+      !I_ID_NAME type STRING
+      !I_ERROR type SY-SUBRC
+    returning
+      value(R_HTML) type STRING .
+  methods GET_CSS_STYLE
+    returning
+      value(R_CSS) type STRING .
+  methods GET_CSS_BOOTSTRAP .
+  methods GET_HTML_BODY_DOCUMENTS_BLOCK
+    returning
+      value(R_HTML) type STRING .
+  methods GET_HTML_START_PATIENT_LIST
+    returning
+      value(R_HTML) type STRING .
+  methods GET_JS_F4_SEARCH
+    importing
+      !I_BODYID type STRING
+      !I_TABLEID type STRING
+    returning
+      value(R_STRING) type STRING .
+  methods GET_JS_MODAL_MODE
+    importing
+      !I_ID type STRING
+      !I_MODE type I
+    returning
+      value(R_STRING) type STRING .
+  methods GET_UNICODE_ICON
+    importing
+      !I_UNICODE type I
+      !I_TXT_NUMBER type SYST_MSGNO
+      !I_POSITION type CHAR1
+    returning
+      value(R_ICON) type STRING .
+ENDCLASS.
+
+
+
+CLASS /KAP/KR_CL_VIEW IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_VIEW->BUILD_BODY
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD build_body.
+
+    IF g_show_cancer_registry EQ 'X'.
+
+      gr_web_doc->body->set_text_value( i_value = me->get_html_cancer_registry( ) ).
+
+    ELSE.
+
+      gr_web_doc->body->set_text_value( i_value = me->get_html_start( ) ).
+
+    ENDIF.
+    "gr_web_doc->body->set_text_value( i_value = me->get_html_cancer_registry( ) ).
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->CLEAR_KREBSREGISTER_DATA
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD clear_krebsregister_data.
+
+    CLEAR:
+      gs_start_html,
+      g_show_cancer_registry,
+      gs_krebsregister.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_CSS_BOOTSTRAP
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_css_bootstrap.
+
+    TRY.
+
+        IF gr_html_ctrl IS NOT INITIAL.
+
+          "Bootstrap css laden
+          gr_html_ctrl->load_mime_object(
+            EXPORTING
+              object_id  = '/KAP/BASE_BS46CSS'
+              object_url = 'BOOTSTRAP.CSS'
+          ).
+          IF sy-subrc <> 0.
+            log_message(
+              EXPORTING
+                i_msg_text    = 'Objekt Bootstrap CSS nicht vorhanden.'
+                i_msg_type    = 'W'
+                i_method_name = 'PRESET_CSS'
+                ir_item       = me
+            ) ##NO_TEXT.
+          ELSE.
+
+            gr_web_doc->head->create_link_child( )->set_href( i_value = 'BOOTSTRAP.CSS'  )->set_rel( i_value = 'stylesheet'  ).
+
+          ENDIF.
+
+        ENDIF.
+
+      CATCH cx_dynamic_check INTO exception.
+
+        log_exception( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_CSS_STYLE
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_CSS                          TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_css_style.
+
+    r_css =
+               '.txt {'
+            && '    color: #46779c;'
+            && '    padding-top: 1.5em;'
+            && '}'
+            && '.btn-head {'
+            && '    color: #243949;'
+            && '    border: 1px solid #243949;'
+            && '}'
+            && '.btn-head:hover {'
+            && '    background-image: linear-gradient(to right, #3F5161 0%, #6a859c 100%);'
+            && '    color: white;'
+            && '    border: 0;'
+            && '}'
+            && '.fluid_col {'
+            && '    padding: 1em;'
+            && '    background: #0B486B;'
+            && '    background: -webkit-linear-gradient(to left, #f3a683, #243949);'
+            && '    background: linear-gradient(to left, #f3a683, #243949);'
+            && '}'
+            && 'h1 {'
+            && '    color: #E7ECF0;'
+            && '}'
+            && '.header_background {'
+            && '    background-image: linear-gradient(to right, #3F5161 0%, #517fa4 100%);'
+            && '}'
+            && '#tr_body:hover {'
+            && '    background-color: #3F5161;'
+            && '    color: #E7ECF0;'
+            && '    font-size: 1.05em;'
+            && '    cursor: pointer;'
+            && '}'
+            && '/*---- 18.03.2021 */'
+            && '.title_color {'
+            && '    color: #f3a683;'
+            && '}'
+            && '.footer_background {'
+            && '    background-color: #3F5161;'
+            && '    color: #FAFAFA;'
+            && '}'
+            && '/*19.03.2021*/'
+            && ''
+            && '.item_color {'
+            && '    color: #46779c;'
+            && '}'
+            && '.item_color:hover {'
+            && '    background-color: #E5E5E5;'
+            && '}'
+            && '#registration-form {'
+            && '    max-width: 900px;'
+            && '    margin: 40px auto;'
+            && '}'
+            && '#registration-form .frm {'
+            && '    min-width: 250px;'
+            && '}'
+            && '#registration-form .form-control {'
+            && '    padding: 4px 20px;'
+            && '    height: auto;'
+            && '}'
+            && ''
+            && '#button_popup{'
+            && '  color: #FAFAFA;'
+            && '}'
+            && ''
+            && '/*  26.04.2021  */'
+            && ''
+            && '.head_kr{'
+            && '    color: #E7ECF0;'
+            && '}'
+            && ''
+            && ''
+            && ''
+            && ''.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_DOCUMENTS_BLOCK
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_body_documents_block.
+
+    CONCATENATE
+        '<!-- Body Table -------------------------------------------------------------------------------------->'
+        '<div class="container-fuid ml-5 mr-5" style="padding-top: 1.5em;">'
+            '<div class="card text-center ">'
+                '<div class="card-header" data-toggle="collapse" href="#collapseOne" style="background-color: #647987;'
+                        'color: #FAFAFA;">'
+                    '<div class="row ">'
+                        '<div class="col">'
+                            '<h5>'
+                                'Diagnose vom: '
+                                '<small class="title_color">'
+                                    ' 01.01.2021 '
+                                '</small>'
+                            '</h5>'
+                        '</div>'
+                        '<div class="col">'
+                            '<h5>'
+                                'Primär ICD: '
+                                '<small class="title_color">'
+                                    ' ICD.142 '
+                                '</small>'
+                            '</h5>'
+                        '</div>'
+                        '<div class="col">'
+                            '<h5>'
+                                'Lokalisation: '
+                                '<small class="title_color">'
+                                    ' R '
+                                '</small>'
+                            '</h5>'
+                        '</div>'
+                        '<div class="col">'
+                            '<h5>'
+                                'Datum Erstdiagnose: '
+                                '<small class="title_color">'
+                                    ' 18.03.2021 '
+                                '</small>'
+                            '</h5>'
+                        '</div>'
+                    '</div>'
+                '</div>'
+                '<div class="collapse show" data-parent="" id="collapseOne">'
+                    '<div class="card-body">'
+                        '<div class="row" style="padding-top: 1em;">'
+                            '<div class="col">'
+                                '<form action="SAPEVENT:ONNEW_OP">'
+                                    '<button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">'
+                                        'Operation +'
+                                    '</button>'
+                                '</form>'
+                                '<ul class="list-group list-group-flush text-left">'
+                                    '<form action="SAPEVENT:ONNEW_OP_DOC" id="form_op_doc">'
+                                        '<input hidden="" type="text" name="form_op_doc" value="Index">'
+                                        '</input>'
+                                        '<a href="#" id="a_op_doc" onclick="this.form.submit()" style="color: #46779c;">'
+                                            'Meldung vom 24.04.20220'
+                                        '</a>'
+                                    '</form>'
+                                '</ul>'
+                            '</div>'
+                            '<div class="col">'
+                                '<form action="SAPEVENT:ONNEW_STRAHL">'
+                                    '<button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">'
+                                        'Strahlentherapie +'
+                                    '</button>'
+                                '</form>'
+                                '<ul class="list-group list-group-flush text-left">'
+                                    '<form action="SAPEVENT:ONNEW_STRAHL_DOC">'
+                                        '<input hidden="" type="text" value="Index">'
+                                            '<button class="btn btn-link btn-block but" style="color: #46779c; text-align: left;" type="submit">'
+                                                'Meldung vom 24.04.20220'
+                                            '</button>'
+                                        '</input>'
+                                    '</form>'
+                                '</ul>'
+                            '</div>'
+                            '<div class="col">'
+                                '<form action="SAPEVENT:ONNEW_SISTHERA">'
+                                    '<button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">'
+                                        'Systemische Therapie +'
+                                    '</button>'
+                                '</form>'
+                                '<ul class="list-group list-group-flush text-left">'
+                                    '<form action="SAPEVENT:ONNEW_SISTHERA_DOC">'
+                                        '<input hidden="" type="text" value="Index">'
+                                            '<button class="btn btn-link btn-block but" style="color: #46779c; text-align: left;" type="submit">'
+                                                'Meldung vom 24.04.20220'
+                                            '</button>'
+                                        '</input>'
+                                    '</form>'
+                                '</ul>'
+                            '</div>'
+                            '<div class="col">'
+                                '<form action="SAPEVENT:ONNEW_VERLAUF">'
+                                    '<button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">'
+                                        'Verlauf +'
+                                    '</button>'
+                                '</form>'
+                                '<ul class="list-group list-group-flush text-left">'
+                                    '<form action="SAPEVENT:ONNEW_VERLAUF_DOC">'
+                                        '<input hidden="" type="text" value="Index">'
+                                            '<button class="btn btn-link btn-block but" style="color: #46779c; text-align: left;" type="submit">'
+                                                'Meldung vom 24.04.20220'
+                                            '</button>'
+                                        '</input>'
+                                    '</form>'
+                                '</ul>'
+                            '</div>'
+                            '<div class="col">'
+                                '<form action="SAPEVENT:ONNEW_TUMOR">'
+                                    '<button class="btn btn-outline-primary btn-block btn-head" id="new_icd" type="submit">'
+                                        'Tumorkonferenz +'
+                                    '</button>'
+                                '</form>'
+                                '<ul class="list-group list-group-flush text-left">'
+                                    '<form action="SAPEVENT:ONNEW_TUMOR_DOC">'
+                                        '<input hidden="" type="text" value="Index">'
+                                            '<button class="btn btn-link btn-block but" style="color: #46779c; text-align: left;" type="submit">'
+                                                'Meldung vom 24.04.20220'
+                                            '</button>'
+                                        '</input>'
+                                    '</form>'
+                                '</ul>'
+                            '</div>'
+                        '</div>'
+                    '</div>'
+                '</div>'
+            '</div>'
+        '</div>'
+        INTO r_html.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_FOOTER
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_HTML_BODY_FOOTER.
+
+    CONCATENATE
+      '<footer>'
+      '<br>'
+          '<nav class="navbar fixed-bottom footer_background">'
+              '<div class="text-left">'
+                  '<h5>'
+                      '<small>'
+                          'www.kap-berlin.de'
+                      '</small>'
+                  '</h5>'
+              '</div>'
+              '<div class="text-right">'
+                  '<h5>'
+                      '<small>'
+                          'info@kap-berlin.de'
+                      '</small>'
+                  '</h5>'
+              '</div>'
+          '</nav>'
+      '</br>'
+      '</footer>'
+    INTO r_html.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_HEADER
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_MODE                         TYPE        CHAR1
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_body_header.
+
+    CASE i_mode.
+
+      WHEN '1'.
+
+        r_html =
+           '<div class="container-fluid fluid_col">'
+        && '<header>'
+        && '<div class="row">'
+        && '<div class="col-sm-10">'
+        && '<h1>'
+        && /kap/kr_cl_model=>get_message( '021' ) "Krebsregister: Einstieg
+        && '</h1>'
+        && '</div>'
+        && '<div class="col-sm-2" style="padding-top: 1.5em">'
+        && '  <form action="SAPEVENT:ON_CLEAR_FIELDS">'
+        && '    <button class="btn btn-outline-primary btn-md btn-head"  id="clear_fields" type="submit" >'
+
+        &&   me->get_unicode_icon(
+           i_unicode    =  9617
+           i_txt_number = '037' "leeren
+           i_position   = 'R' )
+
+        && '    </button>'
+        && '  </form>'
+        && '</div>'
+        && '</div>'
+        && '</header>'
+        && '</div>' .
+
+      WHEN '2'.
+
+        r_html =
+           '<div class="container-fluid fluid_col">'
+        && '<header class="head_kr">'
+        && '<div class="row">'
+        && '<h1>'
+        && /kap/kr_cl_model=>get_message( '001' ) "Krebsregister
+        && '</h1>'
+        && '</div>'
+        && '<div class="row">'
+        && ' <div class="col-sm-10">'
+        && '  <h5>'
+        &&    /kap/kr_cl_model=>get_message( '002' ) "Einrichtung:
+        && '  <small> &nbsp; '
+        &&    gs_krebsregister-einbz
+        && '  </small>'
+        && '  </h5>'
+        && '</div>'
+        && '<div class="col-sm-2">'
+        && '<form action="SAPEVENT:ON_BACK_TO_START">'
+        && '<button class="btn btn-outline-primary btn-md btn-head"  id="back_to_start" type="submit">'
+
+        && me->get_unicode_icon(
+           i_unicode    =  9194
+           i_txt_number = '036' "Zurück
+           i_position   = 'L' )
+
+        && '</button>'
+        && '</form>'
+        && '</div>'
+        && '</div>'
+        && '</header>'
+        && '</div>' .
+
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_PATIENT_DATA
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_body_patient_data.
+
+    CONSTANTS: lc_gesch TYPE dd01l-domname VALUE 'GSCHL'.
+
+    DATA: l_geschlecht TYPE dd07t-ddtext,
+          l_date       TYPE char10.
+
+    "Kurztext zu Domänenfestwert - Geschlecht
+    IF gs_krebsregister-gschl IS NOT INITIAL.
+
+      CALL FUNCTION 'STF4_GET_DOMAIN_VALUE_TEXT'
+        EXPORTING
+          iv_domname      = lc_gesch
+          iv_value        = gs_krebsregister-gschl
+        IMPORTING
+          ev_value_text   = l_geschlecht
+        EXCEPTIONS
+          value_not_found = 1
+          OTHERS          = 2.
+
+    ENDIF.
+
+    "Geburtsdatum formatieren
+    IF gs_krebsregister-gbdat IS NOT INITIAL.
+
+      CONCATENATE gs_krebsregister-gbdat+6(2) '.' gs_krebsregister-gbdat+4(2) '.' gs_krebsregister-gbdat+0(4) INTO l_date.
+
+    ENDIF.
+
+    "Text der Diagnose
+    IF gs_krebsregister-dtext1 IS INITIAL.
+
+      "ICD-Code Bezeichner
+      gs_krebsregister-dtext1 =  /kap/kr_cl_model=>get_message( '038' ).
+
+    ENDIF.
+
+
+    r_html =
+        '<div class="container" id="container_head">'
+    &&       '<div class="row txt">'
+    &&           '<div class="col-xs-12 col-sm-6 col-md-4">'
+    &&               '<div class="form-group">'
+    &&                   '<label>'
+    &&                       /kap/kr_cl_model=>get_message( '003' ) "Name
+    &&                   '</label>'
+    &&                   '<input class="form-control" id="name" type="text" value="' && gs_krebsregister-name && '" readonly style="background: transparent" >'
+    &&                   '</input>'
+    &&               '</div>'
+    &&               '<div class="form-group">'
+    &&                   '<label>'
+    &&                        /kap/kr_cl_model=>get_message( '006' ) "Patientennummer
+    &&                   '</label>'
+    &&                   '<input class="form-control" id="patnr" type="text" value="' && gs_krebsregister-patnr && '" readonly style="background: transparent" >'
+    &&                   '</input>'
+    &&               '</div>'
+    &&           '</div>'
+    &&           '<div class="col-xs-12 col-sm-6 col-md-4">'
+    &&               '<div class="form-group">'
+    &&                   '<label>'
+    &&                        /kap/kr_cl_model=>get_message( '004' ) "Geschlecht
+    &&                   '</label>'
+    &&                   '<input class="form-control" id="gesch" type="text" value="' && l_geschlecht && '" readonly style="background: transparent" >'
+    &&                   '</input>'
+    &&               '</div>'
+    &&               '<div class="form-group">'
+    &&                   '<label>'
+    &&                        /kap/kr_cl_model=>get_message( '007' ) "Geburtsdatum
+    &&                   '</label>'
+    &&                   '<input class="form-control" id="gebdat" type="text" value="' && l_date  && '" readonly style="background: transparent">'
+    &&                   '</input>'
+    &&               '</div>'
+    &&           '</div>'
+    &&           '<div class="col-xs-12 col-sm-12 col-md-4">'
+
+    &&               '<form name="INPUT_ICD" accept-charset="utf-8" method="post"  action="SAPEVENT:ON_NEW_ICD">'
+    &&                 '<div class="form-group">'
+    &&                    '<label id="icd_label">'
+    &&                         gs_krebsregister-dtext1
+    &&                    '</label>'
+    &&                    '<div class="input-group">'
+
+    && get_html_input_hidden( i_id_name = 'popup_mode'  i_error = g_popup_mode  ) "Nummer um ein bestimmtes Modal-Fenster darzustellen
+
+    &&                       '<input name="icd_input" class="form-control" id="icd_input" type="text" >'
+    &&                       '<div class="input-group-prepend" style="padding-left: 1em">'
+    &&                           '<button class="btn btn-outline-primary btn-sm btn-head" name="F4_ICD" data-target="#icd_container" data-toggle="modal" id="search_icd" >'
+
+    && me->get_unicode_icon(
+           i_unicode    =  10697
+           i_txt_number = '005' "ICD-Code auswählen
+           i_position   = 'R' )
+
+    &&                           '</button>'
+    &&                       '</div>'
+    &&                    '</div>'
+    &&                 '</div>'
+    "&&               '</form>'
+    "&&               '<form action="SAPEVENT:ONNEW_ICD">'
+    &&               '<div class="form-group" style="padding-top: 1.9em">'
+    &&                   '<button class="btn btn-outline-primary btn-block btn-head" id="NEW_ICD" name="NEW_ICD" type="submit">'
+
+    && me->get_unicode_icon(
+           i_unicode    =  10133
+           i_txt_number = '008' "Neue primäre Diagnose
+           i_position   = 'R' )
+
+    &&                   '</button>'
+    &&               '</div>'
+    &&               '</form>'
+    &&           '</div>'
+    &&       '</div>'
+    &&   '</div>'
+
+     "Modal Error: Icd Input nicht vorhanden
+
+    && get_html_body_popup_info(
+                         i_target         = 'myModalIcdInput'
+                         i_title          = /kap/kr_cl_model=>get_message( '005' )
+                         i_text           = /kap/kr_cl_model=>get_message( '039' )
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    CLEAR g_popup_mode.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_POPUP_INFO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_TARGET                       TYPE        STRING
+* | [--->] I_TITLE                        TYPE        STRING
+* | [--->] I_TEXT                         TYPE        STRING
+* | [--->] I_BUTTON_TEXT                  TYPE        STRING
+* | [--->] I_BUTTON_TYPE                  TYPE        I(optional)
+* | [--->] I_BUTTON_OUTLINE               TYPE        XFELD(optional)
+* | [<-()] R_HTML_POPUP_INFO              TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_body_popup_info.
+*  Modal Fenster
+
+    DATA: l_button_type  TYPE string.
+
+    CASE i_button_type.
+
+      WHEN 1.
+
+        l_button_type = '<button class="btn btn-outline-primary" data-dismiss="modal" type="button">'.
+
+      WHEN 2.
+
+        l_button_type = '<button class="btn btn-outline-secondary" data-dismiss="modal" type="button">'.
+
+      WHEN 3.
+
+        l_button_type = '<button class="btn btn-outline-success" data-dismiss="modal" type="button">'.
+
+      WHEN 4.
+
+        l_button_type = '<button class="btn btn-outline-info" data-dismiss="modal" type="button">'.
+
+      WHEN 5.
+
+        l_button_type = '<button class="btn btn-outline-warning" data-dismiss="modal" type="button">'.
+
+      WHEN 6.
+
+        l_button_type = '<button class="btn btn-outline-danger" data-dismiss="modal" type="button">'..
+
+      WHEN 7.
+
+        l_button_type = '<button class="btn btn-outline-dark" data-dismiss="modal" type="button">'.
+
+      WHEN 8.
+
+        l_button_type = '<button class="btn btn-outline-light text-dark" data-dismiss="modal" type="button">'.
+
+      WHEN OTHERS.
+
+        l_button_type = '<button class="btn " data-dismiss="modal" type="button">'.
+
+    ENDCASE.
+
+    CONCATENATE
+        '<div aria-hidden="true" class="modal fade" id="' i_target '" role="dialog" tabindex="-1">'
+            '<div class="modal-dialog" role="document">'
+                '<div class="modal-content">'
+                     '<div class="modal-header" style="background:#485460; color:#FAFAFA">'
+                        '<h5>'
+                            i_title
+                        '</h5>'
+                        '<button aria-label="Close" class="close" data-dismiss="modal" type="button">'
+                        '</button>'
+                    '</div>'
+                    '<div class="modal-body">'
+                        i_text
+                    '</div>'
+                    '<div class="modal-footer">'
+                            l_button_type
+                            i_button_text
+                        '</button>'
+                    '</div>'
+                '</div>'
+            '</div>'
+        '</div>'
+        INTO r_html_popup_info.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_BODY_POPUP_LIST_ICD
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_TARGET                       TYPE        STRING
+* | [--->] I_TITLE                        TYPE        STRING
+* | [--->] I_TEXT                         TYPE        STRING(optional)
+* | [--->] I_BUTTON_TEXT                  TYPE        STRING
+* | [--->] I_BUTTON_TYPE                  TYPE        I(optional)
+* | [--->] I_BUTTON_OUTLINE               TYPE        XFELD(optional)
+* | [<-()] R_HTML_POPUP_INFO              TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_HTML_BODY_POPUP_LIST_ICD.
+*  Modal Fenster
+
+    DATA: ls_icdlist TYPE /kap/kr_st_icdlist.
+
+    IF gt_icdlist IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    CONCATENATE
+       '<div class="modal" id="' i_target '">'
+            '<div class="modal-dialog modal-dialog-scrollable modal-lg">'
+                '<div class="modal-content">'
+                    '<!-- Modal Header -->'
+                    '<div class="modal-header header_background">'
+                        '<h1 class="modal-title">'
+                           i_title
+                        '</h1>'
+                        '<button class="close" data-dismiss="modal" type="button">'
+                            '×'
+                        '</button>'
+                    '</div>'
+                    '<!-- Modal body -->'
+                    '<div class="modal-body">'
+                       ' <div class="container-fluid">'
+                       '<input class="form-control" id="myInput" placeholder="Search.." type="text">'
+                            '<table class="table" id="icd_table">'
+                                '<thead class="">'
+                                    '<tr>'
+                                        '<th scope="col">'
+                                            'ICD'
+                                        '</th>'
+                                        '<th scope="col">'
+                                            'Freitext einer Diagnose'
+                                        '</th>'
+                                    '</tr>'
+                                '</thead>'
+                                '<tbody>'
+                             INTO r_html_popup_info.
+
+
+    LOOP AT gt_icdlist INTO ls_icdlist.
+
+      CONCATENATE r_html_popup_info
+                              '<tr id="tr_body">'
+                                  ' <td id="icd_name">'
+                                  ls_icdlist-dkey1
+                                  '</td>'
+                                  '<td id="icd_description">'
+                                      ls_icdlist-ditxt
+                                  '</td>'
+                              '</tr>'
+       INTO r_html_popup_info.
+
+
+    ENDLOOP.
+
+    CONCATENATE r_html_popup_info
+                          '</tbody>'
+                            '</table>'
+                        '</div>'
+                    '</div>'
+                    '<!-- Modal footer -->'
+                    '<div class="modal-footer">'
+                        '<button class="btn btn-outline-info btn-head " data-dismiss="modal" type="button">'
+                           i_button_text
+                        '</button>'
+                    '</div>'
+                '</div>'
+            '</div>'
+       ' </div>'
+
+      INTO r_html_popup_info.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_CANCER_REGISTRY
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_cancer_registry.
+
+    DATA: l_body                 TYPE string,
+          l_header               TYPE string,
+          l_popup_icd_message    TYPE string,
+          l_popup_icd_list       TYPE string,
+          l_body_patientendaten  TYPE string,
+          l_body_documents_block TYPE string,
+          l_body_footer          TYPE string,
+          lt_titel_columns       TYPE ish_t_strings.
+
+    "Html header
+    l_header = get_html_body_header( '2' ).
+
+    "Html Patientendaten
+    l_body_patientendaten = get_html_body_patient_data( ).
+
+    "Html bauen
+    CONCATENATE
+         l_header
+         l_body_patientendaten
+     INTO l_body.
+
+    "Html Suchhilfe dür die ICDs bauen
+    IF gt_icdlist IS INITIAL.
+
+      l_popup_icd_message = get_html_body_popup_info(
+                              i_target         = 'icd_container'
+                              i_title          = 'ICD-Code auswählen'
+                              i_text           = 'Es konnten keine ICD-Codes gefunden werden'
+                              i_button_text    = 'Close'
+                            ).
+
+      CONCATENATE l_body l_popup_icd_message INTO l_body.
+
+    ELSE.
+
+      l_popup_icd_list = get_html_body_popup_list_icd(
+                           i_target         = 'icd_container'
+                           i_title          = 'ICD-Code auswählen'
+                           i_button_text    = 'Close'
+                         ).
+
+      CONCATENATE l_body l_popup_icd_list INTO l_body.
+
+    ENDIF.
+
+    "Html Dokumenten Block
+    l_body_documents_block = get_html_body_documents_block( ).
+
+    CONCATENATE l_body l_body_documents_block INTO l_body.
+
+    "Html footer bauen
+    l_body_footer = get_html_body_footer( ).
+
+    CONCATENATE l_body l_body_footer INTO l_body.
+
+    r_html = l_body.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_INPUT_HIDDEN
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_ID_NAME                      TYPE        STRING
+* | [--->] I_ERROR                        TYPE        SY-SUBRC
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_input_hidden.
+
+    DATA: l_error TYPE char2.
+
+    l_error = i_error.
+
+    CONCATENATE
+    '<input id="' i_id_name '" name="' i_id_name ' " type="hidden" value="' l_error '" />' INTO r_html.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_START
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_start.
+
+    DATA: ls_einri TYPE tn01,
+          l_html   TYPE string,
+          l_msg    TYPE syst_msgv.
+
+    r_html = get_html_body_header( '1' ).
+
+    r_html =
+    r_html
+    && '<div class="container" id="registration-form">'
+    && '            <div class="frm">'
+    && '                <form action="SAPEVENT:ON_START" id="patient_form" accept-charset="utf-8" method="post">'
+    && '                    <div class="form-group row">'
+    && '                        <div class="col-sm-6">'
+    && '                            <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '002' )
+    && '                           </label>'
+    && me->get_html_start_organisations( )
+    && '                        </div>'
+    && '                    </div>'
+    && '                    <br>'
+    && '                        <div class="form-group row">'
+    && '                            <div class="col-sm-4">'
+    && '                                <h5 class="text-primary">'
+    &&  /kap/kr_cl_model=>get_message( '010' ) "Suche über Nummer
+    && '                                </h5>'
+    && '                            </div>'
+    && '                        </div>'
+    && '                        <div class="form-group row">'
+    && '                            <div class="col-sm-4">'
+    && '                                <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '011' ) "Patient:
+    && '                                </label>'
+    && '                                <input class="form-control" id="pat_nr_in" name="pat_nr_in" maxlength="10" type="text" value="' && gs_start_html-patient && '">'
+    && '                                </input>'
+    && '                            </div>'
+    && '                            <div class="col-sm-4">'
+    && '                                <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '012' ) "Fall:
+    && '                                </label>'
+    && '                                <input class="form-control" id="fall_nr_in" name="fall_nr_in" maxlength="10" type="text" value="' && gs_start_html-fall && '">'
+    && '                                </input>'
+    && '                            </div>'
+    && '                        </div>'
+    && '                        <br>'
+    && '                            <div class="form-group row">'
+    && '                                <div class="col">'
+    && '                                    <h5 class="text-primary">'
+    &&  /kap/kr_cl_model=>get_message( '013' ) "Suchbegriffe Patient
+    && '                                    </h5>'
+    && '                                </div>'
+    && '                            </div>'
+    && '                            <div class="form-group row">'
+    && '                                <div class="col">'
+    && '                                    <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '014' ) "Nachname:
+    && '                                    </label>'
+    && '                                    <input class="form-control" id="pat_nname_in" name="pat_nname_in" type="text" value="' && gs_start_html-nname && '">'
+    && '                                    </input>'
+    && '                                </div>'
+    && '                                <div class="col">'
+    && '                                    <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '015' ) "Vorname:
+    && '                                   </label>'
+    && '                                    <input class="form-control" id="pat_vname_in" name="pat_vname_in" type="text" value="' && gs_start_html-vname && '">'
+    && '                                    </input>'
+    && '                                </div>'
+    && '                            </div>'
+    && '                            <div class="form-group row">'
+    && '                                <div class="col">'
+    && '                                    <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '016' ) "Geburtsname:
+    && '                                    </label>'
+    && '                                    <input class="form-control" id="pat_gname_in" name="pat_gname_in" type="text" value="' && gs_start_html-gname && '">'
+    && '                                    </input>'
+
+    && get_html_input_hidden( i_id_name = 'popup_mode'  i_error = g_popup_mode  ) "Nummer um ein bestimmtes Modal-Fenster darzustellen
+
+    && '                                </div>'
+    && '                                <div class="col" style="padding-left: 1em">'
+    && '                                    <label class="text-secondary">'
+    &&  /kap/kr_cl_model=>get_message( '017' ) "Geschlecht:
+    && '                                   </label>'
+    && get_html_start_gender( )
+    && '                                </div>'
+    && '                            </div>'
+    && get_html_start_dob( )
+    && '                           <div class="form-group row" style="padding-left: 1em">'
+    && '                                <div>'
+    && '                                    <button class="btn btn-outline-primary btn-md btn-head" data-target="#patient_container" data-toggle="modal" id="btn_search_pat" name="BTN_SEARCH_PAT" type="submit">'
+
+    &&  me->get_unicode_icon(
+          i_unicode    = 10697
+          i_txt_number = '019' "Suchen
+          i_position   = 'R' )
+
+    && '                                    </button>'
+    && '                                   <button class="btn btn-outline-primary btn-md btn-head" data-target="#check_patient" data-toggle="modal" id="btn_open_kr" name="BTN_OPEN_KR" type="submit">'
+
+    &&   me->get_unicode_icon(
+           i_unicode    =  10004
+           i_txt_number = '020' "Ausführen
+           i_position   = 'R' )
+
+    && '                                    </button>'
+    && '                                </div>'
+    && '                            </div>'
+    && '                        </br>'
+    && '                    </br>'
+    && '                </form>'
+    && '            </div>'
+    && '        </div>'.
+
+    "Modal Error Datum
+
+    r_html = r_html && get_html_body_popup_info(
+                         i_target         = 'myModalGebDat'
+                         i_title          = /kap/kr_cl_model=>get_message( '009' )
+                         i_text           = /kap/kr_cl_model=>get_message( '030' )
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    "Modal Error Patientensuche
+
+    r_html = r_html && get_html_body_popup_info(
+                         i_target         = 'myModalPatSuche'
+                         i_title          = /kap/kr_cl_model=>get_message( '022' )
+                         i_text           = g_error_patient_msg
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    "Modal Error Patientennummer nicht vorhanden
+
+    r_html = r_html && get_html_body_popup_info(
+                         i_target         = 'myModalPatExecute'
+                         i_title          = /kap/kr_cl_model=>get_message( '033' )
+                         i_text           = /kap/kr_cl_model=>get_message( '031' )
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    "Modal Error: Patient hat noch keinen Stammsatz in Einrichtung
+
+    l_msg = gs_start_html-einri(4).
+
+    r_html = r_html && get_html_body_popup_info(
+                         i_target         = 'myModalPatEinri'
+                         i_title          = /kap/kr_cl_model=>get_message( '033' )
+                         i_text           = /kap/kr_cl_model=>get_message(
+                                              i_msgno = '032'
+                                              i_msgv1 = l_msg
+                                            )
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    "Modal Patinetenlist
+
+    r_html = r_html && get_html_start_patient_list( ).
+
+    "Modal Error: Rele
+
+    r_html = r_html && get_html_body_popup_info(
+                         i_target         = 'myModalPatDiagnose'
+                         i_title          = /kap/kr_cl_model=>get_message( '034' )
+                         i_text           = /kap/kr_cl_model=>get_message( '035' )
+                         i_button_text    = 'Close'
+                         i_button_type    = 6 "Danger
+                       ).
+
+    "Footer
+
+    r_html = r_html && get_html_body_footer( ).
+
+    CLEAR:  gs_start_html,
+            g_error_patient_msg,
+            gt_patlist,
+            g_preallocate_organisation,
+            g_popup_mode.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_START_DOB
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_start_dob.
+
+    IF gs_start_html-gebdat IS INITIAL.
+
+      r_html =
+        '<div class="form-group row">'
+     && '     <div class="col-md-6">'
+     && '         <label class="text-secondary">'
+     &&  /kap/kr_cl_model=>get_message( '018' ) "Geburtsdatum:
+     && '         </label>'
+     && '         <input class="form-control"  id="pat_gebdat_in" name="pat_gebdat_in" maxlength="10" type="text" placeholder="TT.MM.JJJJ" >'
+     && '         </input>'
+     && '     </div>'
+     && '</div>'.
+
+
+    ELSE.
+
+      r_html =
+        '<div class="form-group row">'
+     && '     <div class="col-md-6">'
+     && '         <label class="text-secondary">'
+     &&  /kap/kr_cl_model=>get_message( '018' ) "Geburtsdatum:
+     && '         </label>'
+     && '         <input class="form-control"  id="pat_gebdat_in" name="pat_gebdat_in" maxlength="10" type="text" value="' && gs_start_html-gebdat && '">'
+     && '         </input>'
+     && '     </div>'
+     && '</div>'.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_START_GENDER
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_start_gender.
+
+    DATA: ls_tn17t TYPE tn17t,
+          l_gender TYPE string.
+
+    r_html =
+       '<select class="form-control" id="pat_gesch_in" name="pat_gesch_in" >'
+    && '<option>'
+    && '</option>'.
+
+    IF gs_start_html-geschl IS INITIAL.
+
+      LOOP AT /kap/kr_cl_model=>get_t_gender( ) INTO ls_tn17t.
+
+        CONCATENATE l_gender '<option>' ls_tn17t-gschl ls_tn17t-gschltxt '</option>' INTO l_gender SEPARATED BY space.
+
+      ENDLOOP.
+
+    ELSE.
+
+      LOOP AT /kap/kr_cl_model=>get_t_gender( ) INTO ls_tn17t.
+
+        IF gs_start_html-geschl(1) EQ ls_tn17t-gschl.
+
+          CONCATENATE l_gender '<option selected>' ls_tn17t-gschl ls_tn17t-gschltxt '</option>' INTO l_gender SEPARATED BY space.
+
+        ELSE.
+
+          CONCATENATE l_gender '<option>' ls_tn17t-gschl ls_tn17t-gschltxt '</option>' INTO l_gender SEPARATED BY space.
+
+        ENDIF.
+
+      ENDLOOP.
+
+    ENDIF.
+
+    r_html =
+       r_html
+    && l_gender
+    && '</select>'.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_START_ORGANISATIONS
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_start_organisations.
+
+    DATA: ls_einri TYPE tn01,
+          l_einri  TYPE einri,
+          l_html   TYPE string.
+
+    r_html =
+         '<select class="form-control" id="sel_einri" name="einri_in">'
+      && '<option>'
+      && '</option>'.
+
+    IF /kap/kr_cl_model=>get_organisation( ) IS INITIAL.
+
+      "Einrichtungen als Listbox laden
+      LOOP AT /kap/kr_cl_model=>get_t_organisations( ) INTO ls_einri.
+
+        CONCATENATE l_html '<option>' ls_einri-einri ls_einri-einbz '</option>' INTO l_html SEPARATED BY space.
+
+      ENDLOOP.
+
+      r_html = r_html && l_html && '</select>'.
+
+    ELSE.
+
+      LOOP AT /kap/kr_cl_model=>get_t_organisations( ) INTO ls_einri.
+
+        "Wenn Einrichtung ausgewählt wurde, dann keine Vorbelegung bei der Aktualisierung durchführen!
+
+        CASE g_preallocate_organisation.
+
+          WHEN 'X'.
+
+            IF ls_einri-einri EQ gs_start_html-einri(4) and gs_start_html-einri is not INITIAL.
+
+              CONCATENATE l_html '<option selected>' ls_einri-einri ls_einri-einbz '</option>' INTO l_html SEPARATED BY space.
+
+            ELSE.
+
+              CONCATENATE l_html '<option>' ls_einri-einri ls_einri-einbz '</option>' INTO l_html SEPARATED BY space.
+
+            ENDIF.
+
+
+          WHEN OTHERS.
+
+            "Wenn keine Einrichtung ausgewählt wurde, dann die aktuelle Einrichtung Vorbelegen!
+            l_einri = /kap/kr_cl_model=>get_organisation( ).
+
+            IF ls_einri-einri EQ l_einri.
+
+              CONCATENATE l_html '<option selected>' ls_einri-einri ls_einri-einbz '</option>' INTO l_html SEPARATED BY space.
+
+            ELSE.
+
+              CONCATENATE l_html '<option>' ls_einri-einri ls_einri-einbz '</option>' INTO l_html SEPARATED BY space.
+
+            ENDIF.
+
+        ENDCASE.
+
+      ENDLOOP.
+
+      r_html = r_html && l_html && '</select>'.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_HTML_START_PATIENT_LIST
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] R_HTML                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_html_start_patient_list.
+
+    DATA: ls_patlist TYPE bapi1084srch,
+          l_patlist  TYPE string,
+          l_datum    TYPE text10.
+
+    IF gt_patlist IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    r_html =
+           '<!-- The Modal: Patientenlist-->'
+        && '<div class="modal" id="myModalPatList">'
+        && '    <div class="modal-dialog modal-dialog-scrollable modal-lg">'
+        && '        <div class="modal-content">'
+        && '            <!-- Modal Header -->'
+        && '            <div class="modal-header header_background">'
+        && '                <h1 class="modal-title">'
+        &&   /kap/kr_cl_model=>get_message( '023' ) "Patientenliste: Auswahl
+        && '                </h1>'
+        && '                <button class="close" data-dismiss="modal" type="button">'
+        && '                    ×'
+        && '                </button>'
+        && '            </div>'
+        && '            <!-- Modal body -->'
+        && '            <div class="modal-body">'
+        && '                <div class="container-fluid">'
+        && '                    <input class="form-control" id="myPatient" placeholder="Search.." type="text">'
+        && '                        <table class="table" id="patient_table">'
+        && '                            <thead>'
+        && '                                <tr>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '011' ) "Patient
+        && '                                    </th>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '025' ) "Nachname
+        && '                                    </th>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '026' ) "Vorname
+        && '                                    </th>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '027' ) "Geburtsname
+        && '                                    </th>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '028' ) "Geschlecht
+        && '                                    </th>'
+        && '                                    <th scope="col">'
+        &&  /kap/kr_cl_model=>get_message( '029' ) "Geburtsdatum
+        && '                                    </th>'
+        && '                                </tr>'
+        && '                            </thead>'
+        && '                            <tbody>'.
+
+    LOOP AT gt_patlist INTO ls_patlist.
+
+      CALL FUNCTION 'CONVERT_DATE_TO_EXTERNAL'
+        EXPORTING
+          date_internal            = ls_patlist-dob
+        IMPORTING
+          date_external            = l_datum
+        EXCEPTIONS
+          date_internal_is_invalid = 1
+          OTHERS                   = 2.
+
+
+      l_patlist = l_patlist
+
+      && '<tr id="tr_body">'
+      && '    <td id="pat_nr" maxlength="10">'
+      && ls_patlist-patientid
+      && '    </td>'
+      && '    <td id="pat_nname">'
+      && ls_patlist-last_name_pat
+      && '    </td>'
+      && '    <td id="pat_vname">'
+      && ls_patlist-frst_name_pat
+      && '    </td>'
+      && '    <td id="pat_gname">'
+      && ls_patlist-birth_name
+      && '    </td>'
+      && '    <td id="pat_gesch">'
+      && ls_patlist-sex_ext
+      && '    </td>'
+      && '    <td id="pat_gebdat">'
+      && l_datum
+      && '    </td>'
+      && '</tr>'.
+
+      CLEAR: l_datum, ls_patlist.
+
+    ENDLOOP.
+
+    r_html = r_html && l_patlist
+    && '                            </tbody>'
+    && '                        </table>'
+    && '                     </input>'
+    && '                 </div>'
+    && '             </div>'
+    && '             <!-- Modal footer -->'
+    && '             <div class="modal-footer">'
+    && '                 <button class="btn btn-outline-info btn-head " data-dismiss="modal" type="button">'
+    && '                     Close'
+    && '                 </button>'
+    && '             </div>'
+    && '         </div>'
+    && '     </div>'
+    && ' </div>'.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_JS_F4_SEARCH
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_BODYID                       TYPE        STRING
+* | [--->] I_TABLEID                      TYPE        STRING
+* | [<-()] R_STRING                       TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_js_f4_search.
+
+    r_string =
+       '$("#' && i_bodyid && '").on("keyup", function() {'
+    && 'var value = $(this).val().toLowerCase();'
+    && '$("#' && i_tableid && ' #tr_body").filter(function() {'
+    && '$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)'
+    && '});'
+    && '});'.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_JS_MODAL_MODE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_ID                           TYPE        STRING
+* | [--->] I_MODE                         TYPE        I
+* | [<-()] R_STRING                       TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_js_modal_mode.
+
+    r_string =
+       'if ( $("#popup_mode").val() == ' && i_mode && ' ) {'
+    && '   $("#' && i_id && '").modal("toggle");'
+    && '};'.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_VIEW->GET_UNICODE_ICON
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_UNICODE                      TYPE        I
+* | [--->] I_TXT_NUMBER                   TYPE        SYST_MSGNO
+* | [--->] I_POSITION                     TYPE        CHAR1
+* | [<-()] R_ICON                         TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_unicode_icon.
+
+    DATA: l_icon TYPE sychar02,
+          l_text TYPE string.
+
+    l_icon = cl_abap_conv_in_ce=>uccpi( i_unicode ).
+
+    l_text = /kap/kr_cl_model=>get_message( i_txt_number ).
+
+    CASE i_position.
+
+      WHEN 'L'.
+
+        CONCATENATE l_icon l_text INTO r_icon SEPARATED BY space.
+
+      WHEN 'R'.
+
+        CONCATENATE  l_text l_icon INTO r_icon SEPARATED BY space.
+
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->HANDLE_EVENT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] ACTION                         LIKE
+* | [--->] FRAME                          LIKE
+* | [--->] GETDATA                        LIKE
+* | [--->] POSTDATA                       LIKE
+* | [--->] QUERY_TABLE                    LIKE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD handle_event.
+
+    super->handle_event(
+        action      = action
+        frame       = frame
+        getdata     = getdata
+        postdata    = postdata
+        query_table = query_table
+           ).
+
+    RAISE EVENT on_event EXPORTING
+      action = action
+      frame = frame
+      getdata = getdata
+      postdata = postdata
+      query_table = query_table.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_VIEW->PRESET_CSS
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD preset_css.
+
+    TRY.
+
+        "Bootstrap CSS laden
+        get_css_bootstrap( ).
+
+        "Eigene CSS Style laden
+        gr_web_doc->head->create_style_child( )->set_text_value( get_css_style( ) ).
+
+      CATCH cx_dynamic_check INTO exception.
+
+        log_exception( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_VIEW->PRESET_JS
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD preset_js.
+
+    DATA: l_js              TYPE string,
+          l_html_popup_info TYPE string.
+
+    TRY.
+        " Skripte der Oberklasse(n) einsetzen
+        IF gr_html_ctrl IS NOT INITIAL.
+
+          " jQuery laden
+          gr_html_ctrl->load_mime_object(
+            EXPORTING
+              object_id  = '/KAP/BASE_JQ1124'
+              object_url = 'JQUERY.JS'
+          ).
+          IF sy-subrc <> 0.
+            log_message(
+              EXPORTING
+                i_msg_text    = 'Objekt jQuery nicht vorhanden.'
+                i_msg_type    = 'W'
+                i_method_name = 'PRESET_JS'
+                ir_item       = me
+            ) ##NO_TEXT.
+          ELSE.
+            gr_web_doc->head->create_script_child( )->set_src( i_value = 'JQUERY.JS' ).
+          ENDIF.
+
+          " Bootstrap js laden
+          gr_html_ctrl->load_mime_object(
+            EXPORTING
+              object_id  = '/KAP/BASE_BS46JS'
+              object_url = 'BOOTSTRAP.JS'
+          ).
+          IF sy-subrc <> 0.
+            log_message(
+              EXPORTING
+                i_msg_text    = 'Objekt Bootstrap JS nicht vorhanden.'
+                i_msg_type    = 'W'
+                i_method_name = 'PRESET_JS'
+                ir_item       = me
+            ) ##NO_TEXT.
+          ELSE.
+            gr_web_doc->head->create_script_child( )->set_src( i_value = 'BOOTSTRAP.JS' ).
+          ENDIF.
+
+        ENDIF.
+
+
+        "Eigene JS laden
+        l_js =
+             '$(document).ready(function() {'
+
+             "Modal-Fenster:
+
+             "Pop-Up Fehlermeldung Geburtsdatum
+            && me->get_js_modal_mode(
+                i_id   = 'myModalGebDat'
+                i_mode = 1
+              )
+
+             "Pop-Up Fehlermeldung bei der Patientensuche
+             && me->get_js_modal_mode(
+                i_id   = 'myModalPatSuche'
+                i_mode = 2
+              )
+
+             "Pop-Up Fehlermeldung: Patientennummer nicht vorhanden!
+             && me->get_js_modal_mode(
+                i_id   = 'myModalPatExecute'
+                i_mode = 3
+              )
+
+             "Pop-Up Fehlermeldung: Patient hat noch keinen Stammsatz in Einrichtung!
+             && me->get_js_modal_mode(
+                i_id   = 'myModalPatEinri'
+                i_mode = 4
+              )
+
+             "F4-Hilfe Patientenlist
+             && me->get_js_modal_mode(
+                i_id   = 'myModalPatList'
+                i_mode = 5
+              )
+
+             "Pop-Up Fehlermeldung: Es konnte keine relevante Diagnose für das Krebsregister gefunden werden!
+             && me->get_js_modal_mode(
+                i_id   = 'myModalPatDiagnose'
+                i_mode = 6
+              )
+
+              "Pop-Up Fehlermeldung: Bitte wählen Sie einen ICD-Code!
+             && me->get_js_modal_mode(
+                i_id   = 'myModalIcdInput'
+                i_mode = 7
+              )
+
+
+           && 'function check_input_icd() {'
+           && 'if ($("#icd_input").val().length == 0) {'
+           && '$("#icd_label").text("ICD-Code Bezeichner");'
+           && '};'
+           && '}'
+
+           &&  '$("#patient_table tr").click(function() {'
+
+             "'/* Modal Fenster Patientenliste: Auswahl  */'
+           && 'pat_nr = $("#pat_nr", this).text();'
+           && 'pat_nr_txt = $.trim(pat_nr);'
+           && 'pat_nname = $("#pat_nname", this).text();'
+           && 'pat_nname_txt = $.trim(pat_nname);'
+           && 'pat_vname = $("#pat_vname", this).text();'
+           && 'pat_vname_txt = $.trim(pat_vname);'
+           && 'pat_gname = $("#pat_gname", this).text();'
+           && 'pat_gname_txt = $.trim(pat_gname);'
+           && 'pat_gesch = $("#pat_gesch", this).text();'
+           && 'pat_gesch_txt = $.trim(pat_gesch);'
+           && 'pat_gebdat = $("#pat_gebdat", this).text();'
+           && 'pat_gebdat_txt = $.trim(pat_gebdat);'
+           && '$("#pat_nr_in").val(pat_nr_txt);'
+           && '$("#pat_nname_in").val(pat_nname_txt);'
+           && '$("#pat_vname_in").val(pat_vname_txt);'
+           && '$("#pat_gname_in").val(pat_gname_txt);'
+
+             "'/*Geschlecht */'
+           && 'if (pat_gesch_txt == "M") {'
+           && '    $("#pat_gesch_in").val("1 männlich");'
+           && '} else if (pat_gesch_txt == "W" ) {'
+           && '    $("#pat_gesch_in").val("2 weiblich");'
+           && '} else if (pat_gesch_txt == "U" ) {'
+           && '    $("#pat_gesch_in").val("3 unbekannt");'
+           && '}'
+
+             "'/*Geburtsdatum */'
+           && '$("#pat_gebdat_in").val(pat_gebdat_txt);'
+           && '$("#myModalPatList").modal("hide");'
+           && '});'
+
+             "Suchhilfe innerhalb der Patientenlist
+           &&  me->get_js_f4_search(
+                 i_bodyid  = 'myPatient'
+                 i_tableid = 'patient_table'
+               )
+
+             "F4-Hilfe ICD-Code
+             "'/*Funktion, wenn ein Element aus der Hilfesuche für IKD-Codes ausgewählt wird'
+             "'function when an element of the help search for icd codes is chosen */'
+           && '$("tr").click(function() {'
+           && 'icd_name = $("#icd_name", this).text();'
+           && 'icd_description = $("#icd_description", this).text();'
+           && 'icd_name_txt = $.trim(icd_name);'
+           && 'icd_description_txt = $.trim(icd_description);'
+           && '$("#icd_input").val(icd_name_txt);'
+           && '$("#icd_label").text(icd_description_txt);'
+           && '$("#icd_container").modal("hide");'
+           && '});'
+
+             "Suchhilfe innerhalb der ICD-Code List
+             &&  me->get_js_f4_search(
+                 i_bodyid  = 'myInput'
+                 i_tableid = 'icd_table'
+               )
+
+             "'/*wenn man die Taste für die Suche nach einem ICD-Code drückt'
+             "'when pressing the button to search for an icd code*/'
+           && '$("#search_icd").click(function() {'
+           && 'check_input_icd();'
+           && '});'
+
+             "'/*wenn man die Taste zum Hinzufügen eines neuen icd-Dokuments drückt'
+             "'when pressing the button to add a new document icd*/'
+          && '$("#new_icd").click(function() {'
+          && 'check_input_icd();'
+          && '});'
+
+          &&  ' });'.
+
+
+*        CONCATENATE
+*                '$(document).ready(function() {'
+*
+*                "Modal-Fenster:
+*
+*                "Pop-Up Fehlermeldung Geburtsdatum
+*
+*                'if ( $("#popup_mode").val() == 1 ) {'
+*                '   $("#myModalGebDat").modal("toggle");'
+*                '};'
+*
+*                "Pop-Up Fehlermeldung bei der Patientensuche
+*                'if ( $("#popup_mode").val() == 2 ) {'
+*                '   $("#myModalPatSuche").modal("toggle");'
+*                '};'
+*
+*                "Pop-Up Fehlermeldung: Patientennummer nicht vorhanden!
+*                'if ( $("#popup_mode").val() == 3 ) {'
+*                '   $("#myModalPatExecute").modal("toggle");'
+*                '};'
+*
+*                "Pop-Up Fehlermeldung: Patient hat noch keinen Stammsatz in Einrichtung!
+*                'if ( $("#popup_mode").val() == 4 ) {'
+*                '   $("#myModalPatEinri").modal("toggle");'
+*                '};'
+*
+*                "F4-Hilfe Patientenlist
+*                'if ( $("#popup_mode").val() == 5 ) {'
+*                '   $("#myModalPatList").modal("toggle");'
+*                '};'
+*
+*                "Pop-Up Fehlermeldung: Es konnte keine relevante Diagnose für das Krebsregister gefunden werden!
+*                'if ( $("#popup_mode").val() == 6 ) {'
+*                '   $("#myModalPatDiagnose").modal("toggle");'
+*                '};'
+*
+*                'function check_input_icd() {'
+*                'if ($("#icd_input").val().length == 0) {'
+*                '$("#icd_label").text("ICD-Code Bezeichner");'
+*                '};'
+*                '}'
+*
+*                '$("#patient_table tr").click(function() {'
+*
+*                "'/* Modal Fenster Patientenliste: Auswahl  */'
+*                'pat_nr = $("#pat_nr", this).text();'
+*                'pat_nr_txt = $.trim(pat_nr);'
+*                'pat_nname = $("#pat_nname", this).text();'
+*                'pat_nname_txt = $.trim(pat_nname);'
+*                'pat_vname = $("#pat_vname", this).text();'
+*                'pat_vname_txt = $.trim(pat_vname);'
+*                'pat_gname = $("#pat_gname", this).text();'
+*                'pat_gname_txt = $.trim(pat_gname);'
+*                'pat_gesch = $("#pat_gesch", this).text();'
+*                'pat_gesch_txt = $.trim(pat_gesch);'
+*                'pat_gebdat = $("#pat_gebdat", this).text();'
+*                'pat_gebdat_txt = $.trim(pat_gebdat);'
+*                '$("#pat_nr_in").val(pat_nr_txt);'
+*                '$("#pat_nname_in").val(pat_nname_txt);'
+*                '$("#pat_vname_in").val(pat_vname_txt);'
+*                '$("#pat_gname_in").val(pat_gname_txt);'
+*
+*                "'/*Geschlecht */'
+*                'if (pat_gesch_txt == "M") {'
+*                '    $("#pat_gesch_in").val("1 männlich");'
+*                '} else if (pat_gesch_txt == "W" ) {'
+*                '    $("#pat_gesch_in").val("2 weiblich");'
+*                '} else if (pat_gesch_txt == "U" ) {'
+*                '    $("#pat_gesch_in").val("3 unbekannt");'
+*                '}'
+*
+*                "'/*Geburtsdatum */'
+*                '$("#pat_gebdat_in").val(pat_gebdat_txt);'
+*                '$("#myModalPatList").modal("hide");'
+*                '});'
+*
+*                "Suchhilfe innerhalb der Patientenlist
+*                '$("#myPatient").on("keyup", function() {'
+*                'var value = $(this).val().toLowerCase();'
+*                '$("#patient_table #tr_body").filter(function() {'
+*                '$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)'
+*                '});'
+*                '});'
+*
+*                "F4-Hilfe ICD-Code
+*                "'/*Funktion, wenn ein Element aus der Hilfesuche für IKD-Codes ausgewählt wird'
+*                "'function when an element of the help search for icd codes is chosen */'
+*                '$("tr").click(function() {'
+*                'icd_name = $("#icd_name", this).text();'
+*                'icd_description = $("#icd_description", this).text();'
+*                'icd_name_txt = $.trim(icd_name);'
+*                'icd_description_txt = $.trim(icd_description);'
+*                '$("#icd_input").val(icd_name_txt);'
+*                '$("#icd_label").text(icd_description_txt);'
+*                '$("#icd_container").modal("hide");'
+*                '});'
+*
+*                "Suchhilfe innerhalb der ICD-Code List
+*                '$("#myInput").on("keyup", function() {'
+*                'var value = $(this).val().toLowerCase();'
+*                '$("#icd_table #tr_body").filter(function() {'
+*                '$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)'
+*                '});'
+*                '});'
+*
+*                "'/*wenn man die Taste für die Suche nach einem ICD-Code drückt'
+*                "'when pressing the button to search for an icd code*/'
+*                '$("#search_icd").click(function() {'
+*                'check_input_icd();'
+*                '});'
+*
+*                "'/*wenn man die Taste zum Hinzufügen eines neuen icd-Dokuments drückt'
+*                "'when pressing the button to add a new document icd*/'
+*                '$("#new_icd").click(function() {'
+*                'check_input_icd();'
+*                '});'
+*
+*                "'/* Tooltip 19.03.2021 */'
+**                '$("#myInput").on("keyup", function() {'
+**                '    var value = $(this).val().toLowerCase();'
+**                '    $("#icd_table #tr_body").filter(function() {'
+**                '        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)'
+**                '    });'
+**                '});'
+*                ' });'
+*             INTO l_js.
+
+        gr_web_doc->head->create_script_child( )->set_text_value( l_js ).
+
+      CATCH cx_dynamic_check INTO exception.
+
+        log_exception( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_VIEW->REGISTER_EVENTS
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD register_events.
+*===============================================================================
+* Ordnet dem enthaltenen Steuerelement Ereignisbehandlungsmethoden zu.
+*
+* Params:
+*   Keine
+*
+* 23.10.2020, K30
+*   Initialimplementierung
+*===============================================================================
+
+    DATA:
+      ls_evt TYPE cntl_simple_event,
+      lt_evt TYPE cntl_simple_events.
+
+    super->register_events( ).
+
+    TRY .
+        " Abbruch, falls das zugehörige Steuerelement nicht vorhanden ist
+        IF gr_html_ctrl IS NOT INITIAL.
+          " SAPevent des Steuerelements als Anwendungsereignis registrieren
+          ls_evt-eventid = gr_html_ctrl->m_id_sapevent.
+          ls_evt-appl_event = 'X'.
+          APPEND ls_evt TO lt_evt.
+          gr_html_ctrl->set_registered_events( lt_evt ).
+        ENDIF.
+
+      CATCH cx_dynamic_check INTO exception.
+        log_exception( ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_CANCER_REGISTRY
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_SHOW_CANCER_REGISTRY         TYPE        XFELD
+* | [--->] IS_KREBSREGISTER               TYPE        /KAP/KR_ST_KREBSREGISTER(optional)
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_cancer_registry.
+
+    g_show_cancer_registry = i_show_cancer_registry.
+
+    IF is_krebsregister IS NOT INITIAL.
+
+      gs_krebsregister = is_krebsregister.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_KREBSREGISTER_DATA
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IS_NPAT                        TYPE        NPAT
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_krebsregister_data.
+
+    DATA: l_name  TYPE string,
+          ls_tn01 TYPE tn01.
+
+    IF is_npat IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    "Einrichtung
+    gs_krebsregister-einri = is_npat-einri.
+
+    "Einrichtung-Bezeichner
+    CALL FUNCTION 'ISH_EINRI_CHECK'
+      EXPORTING
+        ss_einri  = is_npat-einri
+      IMPORTING
+        ss_tn01   = ls_tn01
+      EXCEPTIONS
+        not_found = 1
+        OTHERS    = 2.
+    IF sy-subrc EQ 0.
+
+      gs_krebsregister-einbz = ls_tn01-einbz.
+
+    ENDIF.
+
+    "Name
+    CALL FUNCTION 'ISH_PATNAME_GET'
+      EXPORTING
+        i_einri          = is_npat-einri
+        i_patnr          = is_npat-patnr
+      IMPORTING
+        e_pnamec         = l_name
+      EXCEPTIONS
+        patnr_not_found  = 1
+        no_authority     = 2
+        no_einri         = 3
+        gender_not_found = 4
+        age_not_found    = 5
+        OTHERS           = 6.
+    IF sy-subrc EQ 0.
+
+      gs_krebsregister-name = l_name.
+
+    ENDIF.
+
+    "Patientennummer
+    gs_krebsregister-patnr = is_npat-patnr.
+
+    "Geschlecht
+    gs_krebsregister-gschl = is_npat-gschl.
+
+    "Geburtsdatum
+    gs_krebsregister-gbdat = is_npat-gbdat.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_MSG_ERROR_PATIENT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_ERROR                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_msg_error_patient.
+
+    g_error_patient_msg = i_error.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_PATLIST
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_PATLIST                     TYPE        /KAP/KR_TT_PATLIST
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_patlist.
+
+    gt_patlist = it_patlist.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_POPUP_MODE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_POPUP_MODE                   TYPE        I
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_popup_mode.
+
+    g_popup_mode = i_popup_mode.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_PREALLOCATE_ORGANISATION
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] I_PREALLOCATE_ORGANISATION     TYPE        XFELD
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_preallocate_organisation.
+
+    g_preallocate_organisation = i_preallocate_organisation.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->SET_START_HML_VALUES
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_QUERY                       TYPE        CNHT_QUERY_TABLE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_start_hml_values.
+
+    DATA: ls_query TYPE w3query.
+
+    IF it_query IS INITIAL.
+
+      RETURN.
+
+    ENDIF.
+
+    LOOP AT it_query INTO ls_query.
+
+      CASE ls_query-name.
+
+        WHEN 'einri_in'.
+
+          gs_start_html-einri = ls_query-value.
+
+        WHEN 'pat_nr_in'.
+
+          gs_start_html-patient = ls_query-value.
+
+        WHEN 'pat_nname_in'.
+
+          gs_start_html-nname = ls_query-value.
+
+        WHEN 'pat_vname_in'.
+
+          gs_start_html-vname = ls_query-value.
+
+        WHEN 'pat_gname_in'.
+
+          gs_start_html-gname = ls_query-value.
+
+        WHEN 'pat_gesch_in'.
+
+          gs_start_html-geschl = ls_query-value.
+
+        WHEN 'pat_gebdat_in'.
+
+          gs_start_html-gebdat = ls_query-value.
+
+      ENDCASE.
+
+    ENDLOOP.
+
+   g_preallocate_organisation = 'X'.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_VIEW->UPDATE_ICDLIST
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_ICDLIST                     TYPE        /KAP/KR_TT_ICDLIST
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD UPDATE_ICDLIST.
+
+    gt_icdlist = it_icdlist.
+
+  ENDMETHOD.
+ENDCLASS.
