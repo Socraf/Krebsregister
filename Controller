@@ -1,0 +1,306 @@
+class /KAP/KR_CL_CONTROLLER definition
+  public
+  inheriting from /KAP/CL_GUI_HANDLER
+  create public .
+
+public section.
+
+  data GR_MODEL type ref to /KAP/KR_CL_MODEL .
+
+  methods CONSTRUCTOR
+    importing
+      !IR_OWNER type ref to /KAP/CL_OBJECT optional .
+  methods GET_VIEW
+    returning
+      value(RR_VIEW) type ref to /KAP/KR_CL_VIEW .
+  methods GET_MODEL
+    returning
+      value(RR_MODEL) type ref to /KAP/KR_CL_MODEL .
+
+  methods FREE
+    redefinition .
+  PROTECTED SECTION.
+
+    METHODS handle_on_event
+        FOR EVENT on_event OF /kap/kr_cl_view
+      IMPORTING
+        action
+        frame
+        getdata
+        postdata
+        query_table
+        sender.
+
+    METHODS handle_on_fcode
+        FOR EVENT on_function_code OF /kap/kr_cl_view
+      IMPORTING
+        !fcode .
+
+    METHODS create_content_area
+        REDEFINITION .
+private section.
+
+  data GR_VIEW type ref to /KAP/KR_CL_VIEW .
+
+  methods INIT .
+ENDCLASS.
+
+
+
+CLASS /KAP/KR_CL_CONTROLLER IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_CONTROLLER->CONSTRUCTOR
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IR_OWNER                       TYPE REF TO /KAP/CL_OBJECT(optional)
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD CONSTRUCTOR.
+
+    super->constructor( ir_owner =  ir_owner ).
+
+    init( ).
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_CONTROLLER->CREATE_CONTENT_AREA
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD CREATE_CONTENT_AREA.
+*==============================================================================
+* Erstellt den Anzeigebereich für die Anwendung. Dazu gehört eine Sicht-Instanz
+* und die Registrierung von Ereignissen, die durch den View ausgelöst werden.
+*
+* Params:
+*   Keine
+*
+*   Initialimplementierung
+*==============================================================================
+
+    TRY .
+
+        "View-Instanz erzeugen
+        IF gr_view IS NOT BOUND.
+
+          CREATE OBJECT gr_view
+            EXPORTING
+              ir_item      = gr_model
+              ir_container = gr_screen.
+
+        ENDIF.
+
+        "View darstellen
+        gr_view->run( ).
+
+        " Ereignisse registrieren
+        SET HANDLER handle_on_fcode FOR gr_view.
+
+        "HTML Ereignis bearbeiten SAPEVENT
+        SET HANDLER me->handle_on_event FOR gr_view.
+
+      CATCH cx_dynamic_check INTO exception.
+
+        log_exception( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_CONTROLLER->FREE
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD FREE.
+*==============================================================================
+* Gibt die Instanz und alle eigenen Objektrefrenzen frei.
+*
+* Params:
+*   Keine
+*
+*   Initialimplementierung
+*==============================================================================
+
+    TRY.
+
+        IF gr_model IS BOUND.
+
+          gr_model->free( ).
+
+        ENDIF.
+
+        CLEAR:  gr_model, gr_view.
+
+        " Oberklassenattribute freigeben
+        super->free( ).
+
+      CATCH cx_dynamic_check INTO exception.
+
+        log_exception( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_CONTROLLER->GET_MODEL
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RR_MODEL                       TYPE REF TO /KAP/KR_CL_MODEL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  method GET_MODEL.
+  endmethod.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method /KAP/KR_CL_CONTROLLER->GET_VIEW
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RR_VIEW                        TYPE REF TO /KAP/KR_CL_VIEW
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_VIEW.
+
+    rr_view = me->gr_view.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_CONTROLLER->HANDLE_ON_EVENT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] ACTION                         LIKE
+* | [--->] FRAME                          LIKE
+* | [--->] GETDATA                        LIKE
+* | [--->] POSTDATA                       LIKE
+* | [--->] QUERY_TABLE                    LIKE
+* | [--->] SENDER                         LIKE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD handle_on_event.
+
+    CASE action.
+
+      WHEN 'ON_START'.
+
+        "Bei der Drucktaste "SUCHEN - BTN_SEARCH_PAT" wird die Patientenlist ermitteln und mögliche Eingabefehler mittels eines Pop-up-Fensters zeigen.
+        me->gr_model->get_t_patient_list(
+        EXPORTING
+            it_query =  query_table  " Query Table
+            ir_view  =  me->gr_view  " Krebsregister - View
+        ).
+
+        "Bei der Drucktaste "AUSFÜHREN - BTN_OPEN_KR" wird das Vorhandensein einer Patientennummer ermitteln ( Model ).
+        "- Wenn die Patientennummer nicht vorhanden ist, dann Fehlermeldung ausgeben (Pop-up-Fenster View)
+        "- Wenn die Patientennummer vorhanden ist, dann:
+        "    - diese Nummer mit der Einrichtung überprüfen und die Html-Seite für das Register laden ( View )
+
+        me->gr_model->check_patient_number(
+        EXPORTING
+            it_query =  query_table  " Query Table
+            ir_view  =  me->gr_view  " Krebsregister - View
+        ).
+
+        "Startet die Steuerung des Programmablaufs. Nach Prüfung, ob das Programm
+        "bereits gestartet wurde, werden das Hauptfenster und der Anzeigebereich
+        "erzeugt und abschließend die geerbte Methode aufgerufen.
+        me->run( ).
+
+      WHEN 'ON_BACK_TO_START'.
+
+        gr_view->set_cancer_registry( ' ' ).
+
+        gr_view->update( ).
+
+        me->run( ).
+
+      WHEN 'ON_CLEAR_FIELDS'.
+
+        gr_view->clear_krebsregister_data( ).
+
+        gr_view->update( ).
+
+        me->run( ).
+
+      WHEN 'ON_NEW_ICD'.
+
+       if gr_model->check_icd_input(
+          EXPORTING
+            it_query =  query_table                " Query Table
+            ir_view  =  me->gr_view                " Krebsregister - View
+        ) eq 0.
+
+
+
+       ENDIF.
+
+
+      WHEN OTHERS.
+
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Protected Method /KAP/KR_CL_CONTROLLER->HANDLE_ON_FCODE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] FCODE                          LIKE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD HANDLE_ON_FCODE.
+*==============================================================================
+* Verarbeitet ein Funktionscode-Ereignis. Transaktionsaufrufe sind immer mit
+* dem Zusatz WITH AUTHORITY-CHECK auszuführen.
+*
+* Params:
+*   fcode   val[syucomm]   - Funktionscode
+*
+*   Initialimplementierung
+*==============================================================================
+*    TRY .
+*        CASE fcode.
+*
+*          WHEN 'BACK' OR 'EXIT'.
+*
+*          WHEN 'CANCEL'.
+*
+*            set_exec_code( ).
+*
+*        ENDCASE.
+*
+*      CATCH cx_dynamic_check INTO exception.
+*
+*        log_exception( ).
+*
+*    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Private Method /KAP/KR_CL_CONTROLLER->INIT
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD INIT.
+*==============================================================================
+* Initialisiert alle eigenen Attribute.
+*
+* Params:
+*   Keine
+*
+*   Initialimplementierung
+*==============================================================================
+
+    IF gr_model IS NOT BOUND.
+
+      CREATE OBJECT gr_model
+        EXPORTING
+          ir_owner = me.
+
+    ELSE.
+
+      gr_model->reset( ).
+
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.
