@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*&  Include           /KAP/KR_PR_KREBSREGISTER_PAI
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+
+  DATA: l_okcode TYPE sy-ucomm.
+
+  l_okcode = sy-ucomm.
+
+  CASE l_okcode.
+
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+
+      IF gr_controller IS BOUND.
+
+        gr_controller->free( ).
+
+      ENDIF.
+
+      CLEAR gr_controller.
+
+      SET SCREEN 0.
+
+      LEAVE SCREEN.
+
+    WHEN OTHERS.
+
+  ENDCASE.
+
+ENDMODULE.

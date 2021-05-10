@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Report /KAP/KR_PR_KREBSREGISTER
+*&---------------------------------------------------------------------*
+*& KAP: Socrates Flores
+*&---------------------------------------------------------------------*
+REPORT /kap/kr_pr_krebsregister.
+
+INCLUDE:
+/kap/kr_pr_krebsregister_top,
+/kap/kr_pr_krebsregister_pbo,
+/kap/kr_pr_krebsregister_pai,
+/kap/kr_pr_krebsregister_f01.
+
+START-OF-SELECTION.
+
+  CALL SCREEN 0100.
+
+
+
+

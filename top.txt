@@ -1,0 +1,9 @@
+*&---------------------------------------------------------------------*
+*&  Include           /KAP/KR_PR_KREBSREGISTER_TOP
+*&---------------------------------------------------------------------*
+
+
+DATA: gr_controller TYPE REF TO /kap/kr_cl_controller,
+      gr_view       TYPE REF TO /kap/kr_cl_view,
+      gr_model      TYPE REF TO /kap/kr_cl_model,
+      okcode        TYPE sy-ucomm.

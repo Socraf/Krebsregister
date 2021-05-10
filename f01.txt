@@ -1,0 +1,43 @@
+*&---------------------------------------------------------------------*
+*&  Include           /KAP/KR_PR_KREBSREGISTER_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Form  INIT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM init .
+
+* Verarbeitet PBO-Ereignisse des Dynpros 100. Hier wird geprüft, ob die
+* Controller-Instanz vorhanden ist, um das GUI des Programms zu starten.
+* Es wird die Handlerklasse erzeugt und ausgeführt. Außerdem werden ggf.
+* Parameter aus dem Selektionsbild konvertiert und an die Handler-Klasse
+* übergeben.
+
+  TRY .
+
+      IF gr_controller IS NOT BOUND.
+
+        CREATE OBJECT gr_controller.
+
+        IF gr_controller->gr_model IS BOUND.
+
+          "Input Parameter in dem Model laden
+          gr_controller->gr_model->get_t_search_help_icdlist( ).
+
+
+        ENDIF.
+
+        gr_controller->run( ).
+
+      ENDIF.
+
+    CATCH cx_dynamic_check.
+
+  ENDTRY.
+
+
+ENDFORM.
